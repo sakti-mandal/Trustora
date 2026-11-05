@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
-import DemoBanner from './components/DemoBanner';
 import OverviewDashboard from './components/OverviewDashboard';
-import BrandGuidelines from './components/BrandGuidelines';
+import BrandRulesAdmin from './components/BrandRulesAdmin';
 import ContentCreator from './components/ContentCreator';
 import ReviewQueue from './components/ReviewQueue';
 import AuditHistory from './components/AuditHistory';
@@ -13,11 +12,8 @@ import {
   fetchCompanies,
   loadDemoData,
   fetchDashboardStats,
-  fetchGuidelines,
   fetchBrandRules,
-  fetchContentSubmissions,
-  analyzeContentSubmission,
-  createContentSubmission
+  fetchContentSubmissions
 } from './api';
 
 export default function App() {
@@ -25,7 +21,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('overview');
   const [company, setCompany] = useState(null);
   const [systemStatus, setSystemStatus] = useState(null);
-  const [guidelines, setGuidelines] = useState([]);
   const [rules, setRules] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
@@ -45,14 +40,12 @@ export default function App() {
       const activeComp = comps?.[0] || { id: 1, company_name: 'NOVA TECH' };
       setCompany(activeComp);
 
-      const [gls, rls, subs, stats] = await Promise.all([
-        fetchGuidelines(activeComp.id).catch(() => []),
+      const [rls, subs, stats] = await Promise.all([
         fetchBrandRules(activeComp.id).catch(() => []),
         fetchContentSubmissions(activeComp.id).catch(() => []),
         fetchDashboardStats(activeComp.id).catch(() => null)
       ]);
 
-      setGuidelines(gls);
       setRules(rls);
       setSubmissions(subs);
       setDashboardStats(stats);
@@ -70,50 +63,27 @@ export default function App() {
     loadWorkspaceData();
   }, []);
 
-  // Handle Load Demo Data button
+  // Handle Reload / Reset Demo Data button
   const handleLoadDemo = async () => {
     setIsDemoLoading(true);
     try {
       await loadDemoData(company?.id || 1);
       await loadWorkspaceData();
-      alert('NOVA TECH demo data reloaded successfully!');
     } catch (err) {
-      alert('Failed to reload demo data');
+      alert('Failed to reload workspace data');
     } finally {
       setIsDemoLoading(false);
     }
   };
 
-  // Quick Test Flow for Judges
-  const handleQuickTest = async () => {
-    setCurrentRole('Content Creator');
-    setActiveTab('content-review');
-
-    // Find sample submission or create one
-    let target = submissions.find((s) => s.title.includes('Cloud Launch'));
-    if (!target) {
-      target = await createContentSubmission({
-        company_id: company?.id || 1,
-        title: 'Q2 Cloud Launch Announcement - Global Campaign',
-        content_type: 'Advertisement',
-        original_content:
-          'Buyers can get 100% guaranteed results with our revolutionary product. This is the best technology available in the world.',
-        submitted_by: 2
-      });
-      await loadWorkspaceData();
-    }
-    setSelectedSubmissionId(target.id);
-  };
-
   // Switch Role helper
   const handleRoleChange = (newRole) => {
     setCurrentRole(newRole);
-    // Suggest tab based on role
-    if (newRole === 'Admin' && activeTab === 'content-review') {
-      setActiveTab('guidelines');
-    } else if (newRole === 'Reviewer' && activeTab === 'guidelines') {
+    if (newRole === 'Admin') {
+      setActiveTab('brand-rules');
+    } else if (newRole === 'Reviewer') {
       setActiveTab('review-queue');
-    } else if (newRole === 'Content Creator' && activeTab === 'review-queue') {
+    } else if (newRole === 'Content Creator') {
       setActiveTab('content-review');
     }
   };
@@ -130,12 +100,8 @@ export default function App() {
         systemStatus={systemStatus}
         onLoadDemo={handleLoadDemo}
         isDemoLoading={isDemoLoading}
-      />
-
-      {/* Demo Banner */}
-      <DemoBanner
-        onQuickTest={handleQuickTest}
-        onRoleChange={handleRoleChange}
+        onNavigate={setActiveTab}
+        onSelectSubmission={setSelectedSubmissionId}
       />
 
       {/* Main Workspace Layout */}
@@ -146,7 +112,7 @@ export default function App() {
           onTabChange={setActiveTab}
           currentRole={currentRole}
           pendingCount={pendingCount}
-          guidelineCount={guidelines.length}
+          rulesCount={rules.length}
         />
 
         {/* Content Viewport */}
@@ -161,13 +127,12 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'guidelines' && (
-              <BrandGuidelines
-                guidelines={guidelines}
+            {activeTab === 'brand-rules' && (
+              <BrandRulesAdmin
+                company={company}
                 rules={rules}
                 companyId={company?.id || 1}
                 onRefresh={loadWorkspaceData}
-                systemStatus={systemStatus}
               />
             )}
 
@@ -190,6 +155,7 @@ export default function App() {
                 onSelectSubmission={setSelectedSubmissionId}
                 onRefresh={loadWorkspaceData}
                 onNavigate={setActiveTab}
+                onRoleChange={handleRoleChange}
               />
             )}
 
@@ -205,7 +171,6 @@ export default function App() {
               <SettingsModal
                 systemStatus={systemStatus}
                 company={company}
-                guidelinesCount={guidelines.length}
                 rulesCount={rules.length}
               />
             )}

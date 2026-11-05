@@ -11,14 +11,14 @@ from backend.config import UPLOAD_DIR, GEMINI_API_KEY, DATABASE_URL
 from backend.database import engine, get_db, Base
 from backend.models import (
     Company, User, BrandGuideline, BrandRule, ContentSubmission,
-    AIFinding, ReviewDecision, ReviewHistory
+    AIFinding, ReviewDecision, ReviewHistory, Notification
 )
 from backend.schemas import (
-    CompanyCreate, CompanyOut, UserCreate, UserOut,
+    CompanyCreate, CompanyUpdate, CompanyOut, UserCreate, UserOut,
     BrandGuidelineOut, BrandRuleCreate, BrandRuleUpdate, BrandRuleOut,
     ContentSubmissionCreate, ContentSubmissionUpdate, ContentSubmissionOut,
     AIFindingOut, ReviewDecisionCreate, ReviewDecisionOut, ReviewHistoryOut,
-    DashboardStats
+    DashboardStats, NotificationOut
 )
 from backend.document_processor import extract_document_text, chunk_text
 from backend.rag_service import (
@@ -84,6 +84,22 @@ def create_company(payload: CompanyCreate, db: Session = Depends(get_db)):
         industry=payload.industry
     )
     db.add(company)
+    db.commit()
+    db.refresh(company)
+    return company
+
+
+@app.put("/companies/{company_id}", response_model=CompanyOut)
+def update_company(company_id: int, payload: CompanyUpdate, db: Session = Depends(get_db)):
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    if payload.company_name is not None:
+        company.company_name = payload.company_name
+    if payload.industry is not None:
+        company.industry = payload.industry
+    if payload.description is not None:
+        company.description = payload.description
     db.commit()
     db.refresh(company)
     return company
@@ -467,6 +483,18 @@ def submit_for_review(content_id: int, db: Session = Depends(get_db)):
         performed_by="Content Creator"
     )
     db.add(history)
+
+    # Notification for Reviewer
+    notif = Notification(
+        company_id=sub.company_id,
+        submission_id=sub.id,
+        recipient_role="Reviewer",
+        title="Review Request Submitted",
+        message=f"New marketing copy '{sub.title}' ({sub.content_type}) has been submitted for governance review.",
+        notification_type="review_request"
+    )
+    db.add(notif)
+
     db.commit()
     db.refresh(sub)
     return sub
@@ -485,11 +513,12 @@ def approve_content(
     sub.status = "Approved"
     sub.updated_at = datetime.now(timezone.utc)
 
+    decision_comment = payload.review_comment or "Content adheres to brand governance guidelines. Approved for publishing."
     decision = ReviewDecision(
         submission_id=sub.id,
         reviewer_id=payload.reviewer_id,
         decision="Approved",
-        review_comment=payload.review_comment or "Content adheres to brand governance guidelines. Approved for publishing."
+        review_comment=decision_comment
     )
     db.add(decision)
 
@@ -501,6 +530,18 @@ def approve_content(
         performed_by="Elena Rostova (Reviewer)"
     )
     db.add(history)
+
+    # Notification for Content Creator
+    notif = Notification(
+        company_id=sub.company_id,
+        submission_id=sub.id,
+        recipient_role="Content Creator",
+        title="Content Approved",
+        message=f"'{sub.title}' was approved by Reviewer: {decision_comment}",
+        notification_type="approved"
+    )
+    db.add(notif)
+
     db.commit()
     db.refresh(sub)
     return sub
@@ -519,11 +560,12 @@ def reject_content(
     sub.status = "Rejected"
     sub.updated_at = datetime.now(timezone.utc)
 
+    decision_comment = payload.review_comment or "Rejected due to brand non-compliance."
     decision = ReviewDecision(
         submission_id=sub.id,
         reviewer_id=payload.reviewer_id,
         decision="Rejected",
-        review_comment=payload.review_comment or "Rejected due to brand non-compliance."
+        review_comment=decision_comment
     )
     db.add(decision)
 
@@ -535,6 +577,18 @@ def reject_content(
         performed_by="Elena Rostova (Reviewer)"
     )
     db.add(history)
+
+    # Notification for Content Creator
+    notif = Notification(
+        company_id=sub.company_id,
+        submission_id=sub.id,
+        recipient_role="Content Creator",
+        title="Content Rejected",
+        message=f"'{sub.title}' was rejected by Reviewer: {decision_comment}",
+        notification_type="rejected"
+    )
+    db.add(notif)
+
     db.commit()
     db.refresh(sub)
     return sub
@@ -553,11 +607,12 @@ def request_changes(
     sub.status = "Needs Changes"
     sub.updated_at = datetime.now(timezone.utc)
 
+    decision_comment = payload.review_comment or "Please revise flagged terminology and claims before publishing."
     decision = ReviewDecision(
         submission_id=sub.id,
         reviewer_id=payload.reviewer_id,
         decision="Changes Requested",
-        review_comment=payload.review_comment or "Please revise flagged terminology and claims before publishing."
+        review_comment=decision_comment
     )
     db.add(decision)
 
@@ -569,9 +624,44 @@ def request_changes(
         performed_by="Elena Rostova (Reviewer)"
     )
     db.add(history)
+
+    # Notification for Content Creator with the Reviewer's comment!
+    notif = Notification(
+        company_id=sub.company_id,
+        submission_id=sub.id,
+        recipient_role="Content Creator",
+        title="Changes Requested by Reviewer",
+        message=f"Reviewer requested revisions on '{sub.title}': \"{decision_comment}\"",
+        notification_type="changes_requested"
+    )
+    db.add(notif)
+
     db.commit()
     db.refresh(sub)
     return sub
+
+
+# ---------------- NOTIFICATIONS ----------------
+@app.get("/notifications", response_model=List[NotificationOut])
+def list_notifications(
+    company_id: int = Query(1),
+    role: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(Notification).filter(Notification.company_id == company_id)
+    if role:
+        query = query.filter(Notification.recipient_role == role)
+    return query.order_by(desc(Notification.id)).limit(20).all()
+
+
+@app.post("/notifications/{notification_id}/read")
+def mark_notification_read(notification_id: int, db: Session = Depends(get_db)):
+    notif = db.query(Notification).filter(Notification.id == notification_id).first()
+    if notif:
+        notif.is_read = True
+        db.commit()
+    return {"message": "Notification marked as read"}
+
 
 
 @app.get("/content/{content_id}/history", response_model=List[ReviewHistoryOut])

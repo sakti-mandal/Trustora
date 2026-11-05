@@ -248,7 +248,7 @@ export default function OverviewDashboard({
               <span>Brand Governance Loop</span>
             </div>
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              Upload Guidelines &rarr; Submit Copy &rarr; AI RAG Audit &rarr; Suggested Fixes &rarr; Human Approval.
+              Admin Saves Rules &rarr; Creator Writes Copy &rarr; AI Audits Compliance &rarr; Creator Fixes &rarr; Human Review & Approval.
             </p>
           </div>
         </div>
@@ -256,3 +256,4 @@ export default function OverviewDashboard({
     </div>
   );
 }
+

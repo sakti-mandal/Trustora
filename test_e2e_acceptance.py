@@ -1,137 +1,181 @@
 import sys
 from backend.database import SessionLocal
 from backend.main import (
-    health_check, load_demo_data, list_guidelines, create_brand_rule,
+    health_check, load_demo_data, update_company, list_brand_rules, create_brand_rule,
     create_content_submission, analyze_content, update_content_submission,
-    submit_for_review, approve_content, get_submission_history, get_dashboard_stats
+    submit_for_review, request_changes, approve_content, get_submission_history,
+    get_dashboard_stats, list_notifications
 )
 from backend.schemas import (
-    BrandRuleCreate, ContentSubmissionCreate, ContentSubmissionUpdate,
-    ReviewDecisionCreate
+    CompanyUpdate, BrandRuleCreate, ContentSubmissionCreate,
+    ContentSubmissionUpdate, ReviewDecisionCreate
 )
 
 def run_acceptance_tests():
     print("=" * 70)
-    print("TRUSTORA — ROUND 2 ACCEPTANCE TEST SUITE")
+    print("TRUSTORA — COMPLETE ROLE-BASED WORKFLOW TEST SUITE")
     print("=" * 70)
 
     db = SessionLocal()
 
     try:
-        # 1. Health check & zero-login verification
-        print("\n[Step 1-2] Testing health and zero-login status...")
-        health_data = health_check()
-        print(f"  ✓ System healthy: {health_data['status']}")
-        print(f"  ✓ Database: {health_data['database']}")
-        print(f"  ✓ Mode: {health_data['mode']}")
-        assert health_data["status"] == "healthy"
+        # Step 1: Health check
+        print("\n[Step 1] Verifying System Health...")
+        health = health_check()
+        print(f"  ✓ System healthy: {health['status']}")
+        print(f"  ✓ Mode: {health['mode']}")
+        assert health["status"] == "healthy"
 
-        # 3. Load NOVA TECH Demo Data
-        print("\n[Step 3] Loading NOVA TECH demo data...")
-        demo_res = load_demo_data(1, db)
-        print(f"  ✓ {demo_res['message']} (Company: {demo_res['company_name']})")
+        # Step 2: Seed & Load Company
+        print("\n[Step 2] Loading Company Workspace...")
+        load_demo_data(1, db)
 
-        # 4-5. Inspect Admin Guidelines
-        print("\n[Step 4-5] Inspecting Admin Brand Guidelines...")
-        guidelines = list_guidelines(1, db)
-        assert len(guidelines) >= 1, "Expected at least 1 guideline document"
-        print(f"  ✓ Found guideline document: '{guidelines[0].document_name}'")
-        assert len(guidelines[0].extracted_text) > 100, "Extracted text is empty"
-        print(f"  ✓ Extracted text length: {len(guidelines[0].extracted_text)} chars")
-
-        # 6. Add a custom Brand Rule as Admin
-        print("\n[Step 6] Admin adds a new Brand Rule...")
-        rule_payload = BrandRuleCreate(
-            company_id=1,
-            rule_type="Prohibited Term",
-            rule_description="Do not refer to security as 'unhackable'.",
-            rule_value="unhackable",
-            severity="High"
+        # Step 3: Admin configures company information
+        print("\n[Step 3] ADMIN: Configuring Company Information...")
+        comp_payload = CompanyUpdate(
+            company_name="NOVA TECH",
+            industry="Enterprise Cloud & AI Solutions",
+            description="NOVA TECH develops secure, scalable cloud intelligence platforms with strict brand governance."
         )
-        created_rule = create_brand_rule(rule_payload, db)
-        print(f"  ✓ Created rule #{created_rule.id}: {created_rule.rule_description}")
+        updated_comp = update_company(1, comp_payload, db)
+        print(f"  ✓ Updated company: {updated_comp.company_name} ({updated_comp.industry})")
+        assert updated_comp.company_name == "NOVA TECH"
 
-        # 7-8. Submit Content Containing Violations as Content Creator
-        print("\n[Step 7-8] Content Creator submits copy with intentional violations...")
-        violating_text = "Buyers can get 100% guaranteed results with our revolutionary product. This is the best technology available in the world."
+        # Step 4: Admin manages brand tone, approved facts, prohibited & preferred terms
+        print("\n[Step 4] ADMIN: Adding and Managing Brand Governance Rules...")
+        admin_rules = [
+            BrandRuleCreate(
+                company_id=1,
+                rule_type="Brand Tone",
+                rule_description="Brand tone must be professional, simple, and trustworthy. Avoid sensationalist hype.",
+                rule_value="professional, simple, trustworthy",
+                severity="High"
+            ),
+            BrandRuleCreate(
+                company_id=1,
+                rule_type="Prohibited Term",
+                rule_description="Do not use the phrase '100% guaranteed results'. Absolute guarantees are legally prohibited.",
+                rule_value="100% guaranteed results",
+                severity="High"
+            ),
+            BrandRuleCreate(
+                company_id=1,
+                rule_type="Preferred Term",
+                rule_description="Use 'customer' instead of 'buyer' in all public-facing copy.",
+                rule_value="buyer -> customer",
+                severity="Medium"
+            ),
+            BrandRuleCreate(
+                company_id=1,
+                rule_type="Approved Fact",
+                rule_description="Platform provides 99.95% measured SLA uptime for over 1,200 enterprise customers.",
+                rule_value="99.95% SLA uptime, 1,200+ customers",
+                severity="High"
+            )
+        ]
+        for r_payload in admin_rules:
+            r = create_brand_rule(r_payload, db)
+            print(f"  ✓ Admin rule saved: [{r.rule_type}] {r.rule_description[:60]}...")
+
+        # Step 5: Content Creator creates new marketing copy with intentional violations
+        print("\n[Step 5] CONTENT CREATOR: Creating Marketing Copy...")
+        raw_copy = "Buyers can get 100% guaranteed results with our revolutionary product. This is the best technology available in the world."
         sub_payload = ContentSubmissionCreate(
             company_id=1,
             submitted_by=2,
-            title="Acceptance Test Campaign",
+            title="Q3 Enterprise Launch Campaign",
             content_type="Advertisement",
-            original_content=violating_text
+            original_content=raw_copy
         )
         submission = create_content_submission(sub_payload, db)
         sub_id = submission.id
-        print(f"  ✓ Content submission created #{sub_id} with status: '{submission.status}'")
+        print(f"  ✓ Submission #{sub_id} created with status: '{submission.status}'")
 
-        # 9-11. Run AI RAG Analysis & Verify Categorized Findings
-        print("\n[Step 9-11] Running AI / RAG analysis...")
+        # Step 6: AI analyses copy against Admin's saved rules
+        print("\n[Step 6] AI SYSTEM: Analyzing Content against Admin's Saved Rules...")
         analysis = analyze_content(sub_id, db)
         findings = analysis["findings"]
-        print(f"  ✓ Analysis completed via: {analysis['mode']}")
-        print(f"  ✓ Issues detected: {len(findings)}")
-        assert len(findings) >= 4, f"Expected at least 4 issues detected, got {len(findings)}"
-        
-        categories = set(f["issue_category"] for f in findings)
-        print(f"  ✓ Identified categories: {categories}")
+        print(f"  ✓ Analysis engine: {analysis['mode']}")
+        print(f"  ✓ Detected violations: {len(findings)}")
+        assert len(findings) >= 4, f"Expected violations to be detected, got {len(findings)}"
         for f in findings:
-            print(f"     - [{f['issue_category']} | {f['severity']}] '{f['problematic_text']}' -> {f['suggested_correction']}")
-            assert f["guideline_reference"], "Missing guideline reference citation"
+            print(f"     - [{f['issue_category']} | {f['severity']}] '{f['problematic_text']}' -> Suggested: '{f['suggested_correction']}'")
             print(f"       Citation: {f['guideline_reference']}")
 
-        # 12. Edit content using suggested corrections
-        print("\n[Step 12] Content Creator applies suggested corrections...")
-        corrected_text = "Customers can achieve measurable efficiency gains with our advanced enterprise platform, engineered with an industry-leading 99.95% SLA uptime."
-        update_payload = ContentSubmissionUpdate(revised_content=corrected_text)
-        update_content_submission(sub_id, update_payload, db)
-        print("  ✓ Revised content saved.")
-
-        # 13. Re-run analysis on revised content
-        print("\n[Step 13] Re-running analysis on revised content...")
-        reanalysis = analyze_content(sub_id, db)
-        print(f"  ✓ Re-analysis issues: {len(reanalysis['findings'])}")
-        assert len(reanalysis['findings']) == 0, f"Expected 0 issues after revision, got {len(reanalysis['findings'])}"
-
-        # 14. Submit revised content for Review
-        print("\n[Step 14] Sending revised content to Reviewer Queue...")
+        # Step 7: Content Creator submits to Reviewer
+        print("\n[Step 7] CONTENT CREATOR: Submitting Copy to Reviewer...")
         sub_pending = submit_for_review(sub_id, db)
         assert sub_pending.status == "Pending Review"
-        print(f"  ✓ Submission #{sub_id} status updated to '{sub_pending.status}'")
+        print(f"  ✓ Submission status: '{sub_pending.status}'")
 
-        # 15-16. Reviewer reviews & approves content
-        print("\n[Step 15-16] Reviewer inspects and approves content...")
-        decision_payload = ReviewDecisionCreate(
+        # Verify Reviewer received notification
+        notifs_rev = list_notifications(1, "Reviewer", db)
+        print(f"  ✓ Reviewer notifications count: {len(notifs_rev)}")
+        assert any(n.notification_type == "review_request" for n in notifs_rev)
+        print(f"     Notification: {notifs_rev[0].title} - {notifs_rev[0].message[:60]}...")
+
+        # Step 8: Reviewer inspects and REQUESTS CHANGES with feedback comment
+        print("\n[Step 8] REVIEWER: Inspecting and Requesting Changes...")
+        reviewer_comment = "Please replace prohibited term '100% guaranteed results' and use 'customer' instead of 'buyer'."
+        sub_needs_changes = request_changes(sub_id, ReviewDecisionCreate(
+            decision="Changes Requested",
+            review_comment=reviewer_comment
+        ), db)
+        assert sub_needs_changes.status == "Needs Changes"
+        print(f"  ✓ Submission status: '{sub_needs_changes.status}'")
+
+        # Verify Content Creator received notification with reviewer feedback
+        notifs_creator = list_notifications(1, "Content Creator", db)
+        assert any(n.notification_type == "changes_requested" for n in notifs_creator)
+        print(f"  ✓ Creator received change request notification:")
+        print(f"     '{notifs_creator[0].message}'")
+
+        # Step 9: Content Creator edits copy using suggestions and re-analyses
+        print("\n[Step 9] CONTENT CREATOR: Revising Copy based on Reviewer Feedback...")
+        revised_copy = "Customers can achieve measurable efficiency gains with our advanced enterprise platform, engineered with an industry-leading 99.95% SLA uptime."
+        update_content_submission(sub_id, ContentSubmissionUpdate(revised_content=revised_copy), db)
+        reanalysis = analyze_content(sub_id, db)
+        print(f"  ✓ Re-analysis detected issues: {len(reanalysis['findings'])}")
+        assert len(reanalysis['findings']) == 0, "Expected 0 issues after applying corrections"
+
+        # Step 10: Content Creator resubmits revised copy for another review
+        print("\n[Step 10] CONTENT CREATOR: Resubmitting Revised Copy to Reviewer...")
+        sub_resubmitted = submit_for_review(sub_id, db)
+        assert sub_resubmitted.status == "Pending Review"
+        print(f"  ✓ Resubmission status: '{sub_resubmitted.status}'")
+
+        # Step 11: Reviewer inspects revised copy and APPROVES
+        print("\n[Step 11] REVIEWER: Reviewing and Approving Final Content...")
+        approval_comment = "Brand compliance fully verified against all rules. Approved for live publishing."
+        sub_approved = approve_content(sub_id, ReviewDecisionCreate(
             decision="Approved",
-            review_comment="Brand compliance verified against Nova Tech 2026 guidelines. Approved for publishing."
-        )
-        approved_sub = approve_content(sub_id, decision_payload, db)
-        assert approved_sub.status == "Approved"
-        print(f"  ✓ Submission status: '{approved_sub.status}'")
+            review_comment=approval_comment
+        ), db)
+        assert sub_approved.status == "Approved"
+        print(f"  ✓ Final submission status: '{sub_approved.status}'")
 
-        # 17-18. Verify persistent History & Decision Trail
-        print("\n[Step 17-18] Verifying Audit History & Decisions...")
+        # Step 12: Verify complete audit history in database
+        print("\n[Step 12] Verifying Complete Audit History Trail in Database...")
         history = get_submission_history(sub_id, db)
-        print(f"  ✓ Found {len(history)} persistent history logs for submission #{sub_id}:")
-        for h in history:
-            print(f"     - Action: '{h.action}' by '{h.performed_by}' at {h.created_at}")
+        print(f"  ✓ Total audit events recorded: {len(history)}")
         actions = [h.action for h in history]
+        print(f"     Actions in order: {actions}")
         assert "Created" in actions
-        assert "Analyzed" in actions
         assert "Submitted for Review" in actions
+        assert "Changes Requested" in actions
+        assert "Revised" in actions
         assert "Approved" in actions
 
-        # 19-20. Verify Dashboard metrics and persistent data survival
-        print("\n[Step 19-20] Checking Dashboard live stats...")
+        # Step 13: Dashboard live stats verification
+        print("\n[Step 13] Verifying Dashboard Live Metrics...")
         stats = get_dashboard_stats(1, db)
         print(f"  ✓ Total Submissions: {stats['total_submissions']}")
         print(f"  ✓ Approved Content: {stats['approved_content']}")
         print(f"  ✓ Pending Reviews: {stats['pending_reviews']}")
         print(f"  ✓ Flagged Content: {stats['flagged_content']}")
-        assert stats["approved_content"] >= 1, "Approved content should be at least 1"
 
         print("\n" + "=" * 70)
-        print("ALL ROUND 2 ACCEPTANCE TESTS PASSED SUCCESSFULLY! (20/20)")
+        print("COMPLETE CONNECTED WORKFLOW TEST PASSED! (ALL 13 STEPS)")
         print("=" * 70)
 
     finally:

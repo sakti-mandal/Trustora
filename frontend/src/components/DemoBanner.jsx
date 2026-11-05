@@ -45,3 +45,4 @@ export default function DemoBanner({ onQuickTest, onRoleChange }) {
     </div>
   );
 }
+

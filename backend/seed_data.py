@@ -12,18 +12,22 @@ logger = logging.getLogger("trustora.seed")
 
 def seed_nova_tech(db: Session) -> Company:
     """
-    Seeds NOVA TECH fictional demonstration company with comprehensive
-    guidelines, rules, and pre-staged violating content for hackathon evaluation.
+    Seeds NOVA TECH company with comprehensive
+    rules, facts, tone, and pre-staged content.
     """
     # Check if NOVA TECH exists
     company = db.query(Company).filter(Company.company_name == "NOVA TECH").first()
     if company:
         # Clear existing knowledge chunks to re-register
         clear_company_knowledge(company.id)
+        if not company.description:
+            company.description = "NOVA TECH provides secure, enterprise-grade cloud intelligence and governance platforms for modern organizations."
+            db.commit()
     else:
         company = Company(
             company_name="NOVA TECH",
-            industry="Enterprise Cloud & AI Solutions"
+            industry="Enterprise Cloud & AI Solutions",
+            description="NOVA TECH provides secure, enterprise-grade cloud intelligence and governance platforms for modern organizations."
         )
         db.add(company)
         db.commit()

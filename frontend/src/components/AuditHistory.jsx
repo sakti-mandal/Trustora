@@ -156,3 +156,4 @@ export default function AuditHistory({ submissions, onSelectSubmission, onNaviga
     </div>
   );
 }
+

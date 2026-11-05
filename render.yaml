@@ -24,3 +24,4 @@ databases:
     region: oregon
     databaseName: trustora
     user: trustora_user
+

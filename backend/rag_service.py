@@ -210,10 +210,58 @@ class GovernanceAnalyzer:
                             "verification_status": "Verified against Brand Rules"
                         })
 
-            # 3. Approved Fact Consistency
-            elif "approved fact" in rule_type.lower() or "fact" in rule_type.lower():
-                # If content mentions keywords but contradicts, flag
-                pass
+            # 3. Brand Tone Rules
+            elif "tone" in rule_type.lower():
+                tone_avoid_terms = ["revolutionary", "miraculous", "insane", "mind-blowing", "crazy cheap", "unbelievable"]
+                if rule_val:
+                    for t in rule_val.split(","):
+                        if t.strip() and "avoid" in rule_desc.lower():
+                            tone_avoid_terms.append(t.strip())
+                for term in tone_avoid_terms:
+                    pattern = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
+                    for match in pattern.finditer(content):
+                        findings.append({
+                            "issue_category": "Brand Tone Mismatch",
+                            "severity": severity or "High",
+                            "problematic_text": match.group(0),
+                            "explanation": f"Overly promotional tone violates brand tone standard: {rule_desc}",
+                            "guideline_reference": f"Brand Tone Rule: {rule_desc}",
+                            "suggested_correction": "advanced enterprise" if term.lower() == "revolutionary" else "reliable",
+                            "verification_status": "Verified against Brand Rules"
+                        })
+
+            # 4. Communication Standards & Absolute Superlatives
+            elif "communication" in rule_type.lower() or "standard" in rule_type.lower():
+                raw_terms = [t.strip() for t in rule_val.split(",") if t.strip()] if rule_val else []
+                for term in raw_terms:
+                    pattern = re.compile(rf"\b{re.escape(term)}\b", re.IGNORECASE)
+                    for match in pattern.finditer(content):
+                        findings.append({
+                            "issue_category": "Inconsistent Brand Information",
+                            "severity": severity or "High",
+                            "problematic_text": match.group(0),
+                            "explanation": f"Absolute superlative violates communication standards: {rule_desc}",
+                            "guideline_reference": f"Communication Standard: {rule_desc}",
+                            "suggested_correction": "an industry-leading technology built for modern teams",
+                            "verification_status": "Verified against Brand Rules"
+                        })
+
+            # 5. Approved Facts & Unverified Claim Validation
+            elif "fact" in rule_type.lower() or "claim" in rule_type.lower():
+                # Check for unsubstantiated claims in content (e.g. 100%, best in the world)
+                claim_patterns = [r"\b100%\b", r"\bguaranteed results\b", r"\bbest.*in the world\b"]
+                for c_pat in claim_patterns:
+                    match = re.search(c_pat, content, re.IGNORECASE)
+                    if match and match.group(0).lower() not in (rule_val.lower()):
+                        findings.append({
+                            "issue_category": "Unsupported or Unverified Claims",
+                            "severity": severity or "High",
+                            "problematic_text": match.group(0),
+                            "explanation": f"Claim is not substantiated by approved company facts. {rule_desc}",
+                            "guideline_reference": f"Approved Fact Rule: {rule_desc}",
+                            "suggested_correction": "proven performance backed by published benchmarks",
+                            "verification_status": "Unverified – Human Review Required"
+                        })
 
         return findings
 
@@ -236,8 +284,8 @@ class GovernanceAnalyzer:
              "Exaggerated or unverified claim",
              "Unsupported or Unverified Claims",
              "High",
-             "Claims of 100% guarantee or being 'the best in the world' are legally risky and unsupported by company proof.",
-             "Nova Tech Guidelines Section 4: Claims must be substantiated with verified lab data.",
+             "Claims of 100% guarantee or being 'the best in the world' are legally risky and unsupported by approved company proof.",
+             "Brand Compliance Policy: All marketing claims must be substantiated with documented benchmarks.",
              "Unverified – Human Review Required",
              "state demonstrated benefits supported by published benchmarks")
         ]
@@ -261,9 +309,9 @@ class GovernanceAnalyzer:
             (r"\b(revolutionary|insane|mind-blowing|crazy cheap|unbelievable)\b",
              "Overly sensationalist tone violates professional brand voice standard.",
              "High",
-             "Nova Tech Tone Guidelines: Maintain a professional, simple, and trustworthy voice. Avoid exaggerated promotional hype.",
+             "Brand Tone Guidelines: Maintain a professional, simple, and trustworthy voice. Avoid exaggerated promotional hype.",
              "advanced",
-             "Verified against Guidelines")
+             "Verified against Brand Rules")
         ]
         for pat, expl, sev, ref, sug, verif in hype_patterns:
             match = re.search(pat, content, re.IGNORECASE)
@@ -287,7 +335,7 @@ class GovernanceAnalyzer:
                 "explanation": "Absolute superlative claim contradicts brand compliance guidelines.",
                 "guideline_reference": "Brand Rule: Product claims must be supported by approved company information.",
                 "suggested_correction": "an industry-leading technology built for modern teams",
-                "verification_status": "Verified against Guidelines"
+                "verification_status": "Verified against Brand Rules"
             })
 
         # Category: Grammar and Readability Suggestions
@@ -301,7 +349,7 @@ class GovernanceAnalyzer:
                     "explanation": "Sentence exceeds 25 words. Splitting long compound sentences improves marketing readability.",
                     "guideline_reference": "Style Guide: Communication standards recommend sentences under 20 words.",
                     "suggested_correction": "Break into two concise sentences.",
-                    "verification_status": "Verified against Guidelines"
+                    "verification_status": "Verified against Brand Rules"
                 })
 
         # If buyer/buyers is in text but wasn't caught by rules
@@ -316,9 +364,9 @@ class GovernanceAnalyzer:
                 "severity": "Medium",
                 "problematic_text": matched,
                 "explanation": "Brand guidelines require using 'customer' rather than 'buyer'.",
-                "guideline_reference": "Nova Tech Brand Terminology: Use 'customer' instead of 'buyer'.",
+                "guideline_reference": "Brand Terminology: Use 'customer' instead of 'buyer'.",
                 "suggested_correction": replacement,
-                "verification_status": "Verified against Guidelines"
+                "verification_status": "Verified against Brand Rules"
             })
 
         return fallback_findings

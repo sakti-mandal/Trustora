@@ -1,14 +1,13 @@
 import React from 'react';
 import {
   LayoutDashboard,
-  FileCheck2,
+  ShieldAlert,
   PenTool,
   Clock,
   History,
   Settings,
-  Sparkles,
-  ShieldAlert,
-  ChevronRight
+  ChevronRight,
+  SlidersHorizontal
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -16,51 +15,45 @@ export default function Sidebar({
   onTabChange,
   currentRole,
   pendingCount = 0,
-  guidelineCount = 0
+  rulesCount = 0
 }) {
   const navItems = [
     {
       id: 'overview',
       label: 'Overview',
       icon: LayoutDashboard,
-      badge: null,
-      roleTag: 'All'
+      badge: null
     },
     {
-      id: 'guidelines',
-      label: 'Brand Guidelines',
-      icon: FileCheck2,
-      badge: guidelineCount > 0 ? guidelineCount : null,
-      roleTag: 'Admin'
+      id: 'brand-rules',
+      label: 'Brand Rules & Admin',
+      icon: SlidersHorizontal,
+      badge: rulesCount > 0 ? rulesCount : null
     },
     {
       id: 'content-review',
-      label: 'Content Review',
+      label: 'Content Creator',
       icon: PenTool,
-      badge: null,
-      roleTag: 'Creator'
+      badge: null
     },
     {
       id: 'review-queue',
       label: 'Review Queue',
       icon: Clock,
       badge: pendingCount > 0 ? pendingCount : null,
-      badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-      roleTag: 'Reviewer'
+      badgeColor: 'bg-amber-100 text-amber-800 border-amber-200'
     },
     {
       id: 'history',
-      label: 'History & Audits',
+      label: 'Audit History',
       icon: History,
-      badge: null,
-      roleTag: 'All'
+      badge: null
     },
     {
       id: 'settings',
-      label: 'Settings & AI',
+      label: 'Settings & System',
       icon: Settings,
-      badge: null,
-      roleTag: 'Admin'
+      badge: null
     }
   ];
 
@@ -70,7 +63,7 @@ export default function Sidebar({
         {/* Navigation Items */}
         <div className="space-y-1">
           <p className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-            Workspace Navigation
+            Navigation
           </p>
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -110,33 +103,18 @@ export default function Sidebar({
             );
           })}
         </div>
-
-        {/* Hackathon Callout Card */}
-        <div className="mt-8 p-3.5 rounded-xl bg-gradient-to-br from-slate-900 to-navy-900 text-white shadow-sm border border-slate-800">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-xs font-bold text-slate-100">Team REDO • Round 2</span>
-          </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed">
-            AI-powered brand governance preventing guideline violations, prohibited terms & unverified claims.
-          </p>
-          <div className="mt-2.5 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
-            <span>CodeNexus 2026</span>
-            <span className="text-emerald-400 font-semibold">Zero-Login Mode</span>
-          </div>
-        </div>
       </div>
 
       {/* Role Quick Hint */}
-      <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
-        <div className="flex items-center gap-2 text-slate-700 font-semibold mb-1">
+      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-1">
+        <div className="flex items-center gap-2 text-slate-800 font-semibold">
           <ShieldAlert className="w-3.5 h-3.5 text-brand-600" />
           <span>Active Role: {currentRole}</span>
         </div>
         <p className="text-[11px] text-slate-500 leading-normal">
-          {currentRole === 'Admin' && 'Manage guidelines, upload PDFs & define brand rules.'}
-          {currentRole === 'Content Creator' && 'Draft marketing copy & trigger real-time AI compliance.'}
-          {currentRole === 'Reviewer' && 'Human-in-the-loop review, approve or request changes.'}
+          {currentRole === 'Admin' && 'Configure company info, brand tone, facts & prohibited terms.'}
+          {currentRole === 'Content Creator' && 'Draft marketing copy & verify compliance before submitting.'}
+          {currentRole === 'Reviewer' && 'Inspect submitted copy, add comments & approve or request changes.'}
         </p>
       </div>
     </aside>

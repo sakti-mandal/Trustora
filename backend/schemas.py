@@ -6,9 +6,15 @@ from datetime import datetime
 class CompanyBase(BaseModel):
     company_name: str
     industry: Optional[str] = None
+    description: Optional[str] = None
 
 class CompanyCreate(CompanyBase):
     pass
+
+class CompanyUpdate(BaseModel):
+    company_name: Optional[str] = None
+    industry: Optional[str] = None
+    description: Optional[str] = None
 
 class CompanyOut(CompanyBase):
     id: int
@@ -144,3 +150,16 @@ class DashboardStats(BaseModel):
     flagged_content: int
     recent_activity: List[Any] = []
     recent_submissions: List[ContentSubmissionOut] = []
+
+class NotificationOut(BaseModel):
+    id: int
+    company_id: int
+    submission_id: Optional[int] = None
+    recipient_role: str
+    title: str
+    message: str
+    notification_type: str
+    is_read: bool = False
+    created_at: Optional[datetime] = None
+    model_config = ConfigDict(from_attributes=True)
+

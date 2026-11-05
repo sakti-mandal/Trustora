@@ -5,13 +5,12 @@ import {
   Cpu,
   Shield,
   Layers,
-  Sparkles,
   Building,
   CheckCircle2,
   AlertTriangle
 } from 'lucide-react';
 
-export default function SettingsModal({ systemStatus, company, guidelinesCount, rulesCount }) {
+export default function SettingsModal({ systemStatus, company, rulesCount }) {
   return (
     <div className="space-y-6">
       {/* Top Banner */}
@@ -20,21 +19,21 @@ export default function SettingsModal({ systemStatus, company, guidelinesCount, 
           System Architecture & Governance Settings
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          RAG engine specifications, persistent database connection, and AI pipeline status.
+          Governance engine specifications, persistent database connection, and AI pipeline status.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Card 1: AI & RAG Configuration */}
+        {/* Card 1: AI & Governance Engine */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <div className="flex items-center gap-2 text-sm font-bold text-navy-900">
             <Cpu className="w-5 h-5 text-brand-600" />
-            <span>AI System & RAG Engine</span>
+            <span>AI Governance & RAG Engine</span>
           </div>
 
           <div className="space-y-3 text-xs">
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-slate-600 font-medium">Gemini API Status:</span>
+              <span className="text-slate-600 font-medium">Gemini AI Status:</span>
               <span
                 className={`font-bold px-2 py-0.5 rounded-full border text-[11px] ${
                   systemStatus?.gemini_api_configured
@@ -47,23 +46,16 @@ export default function SettingsModal({ systemStatus, company, guidelinesCount, 
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-slate-600 font-medium">Vector Index Retrieval:</span>
+              <span className="text-slate-600 font-medium">Rule Engine:</span>
               <span className="font-semibold text-slate-800">
-                Lexical & Semantic Cosine Vector Retrieval
+                Deterministic Policy & Regex Matcher
               </span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-slate-600 font-medium">Document Chunking:</span>
+              <span className="text-slate-600 font-medium">Unverified Claim Detection:</span>
               <span className="font-semibold text-slate-800">
-                150-word sliding window with 30-word overlap
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-slate-600 font-medium">Extraction Engines:</span>
-              <span className="font-semibold text-slate-800">
-                pypdf & python-docx XML parser
+                Verified against Admin's Approved Facts
               </span>
             </div>
           </div>
@@ -92,41 +84,9 @@ export default function SettingsModal({ systemStatus, company, guidelinesCount, 
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <span className="text-slate-600 font-medium">Active Brand Guidelines:</span>
-              <span className="font-semibold text-slate-800">{guidelinesCount} documents</span>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
               <span className="text-slate-600 font-medium">Active Brand Rules:</span>
               <span className="font-semibold text-slate-800">{rulesCount} active rules</span>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Project & Hackathon Meta */}
-      <div className="bg-gradient-to-br from-navy-900 to-slate-900 text-white p-6 rounded-2xl shadow-xs">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs uppercase font-extrabold tracking-wider text-amber-400">
-                Hackathon Project Info
-              </span>
-              <span className="text-slate-500">•</span>
-              <span className="text-xs text-slate-300">CodeNexus India 2026 – Round 2</span>
-            </div>
-            <h3 className="text-lg font-extrabold text-white">
-              TRUSTORA — AI-Powered Brand Governance Platform
-            </h3>
-            <p className="text-xs text-slate-300 mt-1">
-              Team: <strong>REDO</strong> | Tagline: <em>Trust, Before It Goes Live.</em>
-            </p>
-          </div>
-
-          <div className="text-right text-xs text-slate-400">
-            <span className="inline-block px-3 py-1 bg-white/10 rounded-lg text-emerald-300 font-semibold">
-              Production-Style Architecture Ready
-            </span>
           </div>
         </div>
       </div>

@@ -10,6 +10,30 @@ export async function fetchCompanies() {
   return res.json();
 }
 
+export async function updateCompany(companyId, updates) {
+  const res = await fetch(`${API_BASE}/companies/${companyId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates)
+  });
+  if (!res.ok) throw new Error('Failed to update company');
+  return res.json();
+}
+
+export async function fetchNotifications(companyId = 1, role = null) {
+  let url = `${API_BASE}/notifications?company_id=${companyId}`;
+  if (role) url += `&role=${encodeURIComponent(role)}`;
+  const res = await fetch(url);
+  return res.json();
+}
+
+export async function markNotificationRead(id) {
+  const res = await fetch(`${API_BASE}/notifications/${id}/read`, {
+    method: 'POST'
+  });
+  return res.json();
+}
+
 export async function loadDemoData(companyId = 1) {
   const res = await fetch(`${API_BASE}/companies/${companyId}/load-demo`, {
     method: 'POST'
@@ -162,3 +186,4 @@ export async function fetchSubmissionHistory(id) {
   const res = await fetch(`${API_BASE}/content/${id}/history`);
   return res.json();
 }
+

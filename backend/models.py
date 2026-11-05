@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from backend.database import Base
 
@@ -12,6 +12,7 @@ class Company(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     company_name = Column(String(255), nullable=False)
     industry = Column(String(100), nullable=True)
+    description = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utcnow)
 
     # Relationships
@@ -19,6 +20,7 @@ class Company(Base):
     guidelines = relationship("BrandGuideline", back_populates="company", cascade="all, delete-orphan")
     rules = relationship("BrandRule", back_populates="company", cascade="all, delete-orphan")
     submissions = relationship("ContentSubmission", back_populates="company", cascade="all, delete-orphan")
+    notifications = relationship("Notification", back_populates="company", cascade="all, delete-orphan")
 
 
 class User(Base):
@@ -127,3 +129,21 @@ class ReviewHistory(Base):
     created_at = Column(DateTime, default=utcnow)
 
     submission = relationship("ContentSubmission", back_populates="history")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="CASCADE"), nullable=False)
+    submission_id = Column(Integer, ForeignKey("content_submissions.id", ondelete="CASCADE"), nullable=True)
+    recipient_role = Column(String(50), nullable=False)  # "Reviewer", "Content Creator", "Admin"
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=False)
+    notification_type = Column(String(50), nullable=False)  # "review_request", "changes_requested", "approved", "rejected"
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=utcnow)
+
+    company = relationship("Company", back_populates="notifications")
+    submission = relationship("ContentSubmission")
+

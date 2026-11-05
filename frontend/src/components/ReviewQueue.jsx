@@ -19,14 +19,16 @@ export default function ReviewQueue({
   selectedSubmissionId,
   onSelectSubmission,
   onRefresh,
-  onNavigate
+  onNavigate,
+  onRoleChange
 }) {
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filterMode, setFilterMode] = useState('Pending'); // 'Pending' | 'All'
 
-  // Submissions needing review
   const pendingList = submissions?.filter((s) => s.status === 'Pending Review') || [];
   const allSubmissions = submissions || [];
+  const displayList = filterMode === 'Pending' ? pendingList : allSubmissions;
 
   const selectedSub =
     submissions?.find((s) => s.id === selectedSubmissionId) ||
@@ -39,16 +41,23 @@ export default function ReviewQueue({
     try {
       if (actionType === 'approve') {
         await approveContent(selectedSub.id, comment);
-        // Trigger celebratory confetti
         confetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 }
         });
+        alert(`Content approved successfully!`);
       } else if (actionType === 'reject') {
         await rejectContent(selectedSub.id, comment);
+        alert(`Content rejected.`);
       } else if (actionType === 'request-changes') {
+        if (!comment.trim()) {
+          alert('Please provide reviewer feedback in the comments box explaining the requested changes.');
+          setIsSubmitting(false);
+          return;
+        }
         await requestChanges(selectedSub.id, comment);
+        alert(`Changes requested. Submission returned to Content Creator with your comments.`);
       }
       setComment('');
       await onRefresh();
@@ -88,14 +97,13 @@ export default function ReviewQueue({
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Human-in-the-loop verification. Review AI findings, inspect original vs revised copy, and approve or reject.
+            Human-in-the-loop verification. Inspect submitted copy, evaluate AI findings, add reviewer feedback, and approve or request changes.
           </p>
         </div>
 
-        {/* Human in the loop declaration */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold">
+        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 font-semibold">
           <ShieldCheck className="w-4 h-4 text-brand-600" />
-          <span>Final Decision Belongs to Human</span>
+          <span>Final Publishing Decision Belongs to Human</span>
         </div>
       </div>
 
@@ -105,46 +113,67 @@ export default function ReviewQueue({
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4">
             <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
               <span className="text-xs font-bold text-navy-900 uppercase tracking-wide">
-                Review Queue ({allSubmissions.length})
+                Review Queue
               </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                {pendingList.length} Pending
-              </span>
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold">
+                <button
+                  onClick={() => setFilterMode('Pending')}
+                  className={`px-2 py-0.5 rounded ${
+                    filterMode === 'Pending' ? 'bg-white shadow-xs text-navy-900' : 'text-slate-500'
+                  }`}
+                >
+                  Pending ({pendingList.length})
+                </button>
+                <button
+                  onClick={() => setFilterMode('All')}
+                  className={`px-2 py-0.5 rounded ${
+                    filterMode === 'All' ? 'bg-white shadow-xs text-navy-900' : 'text-slate-500'
+                  }`}
+                >
+                  All ({allSubmissions.length})
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-2 max-h-[600px] overflow-y-auto">
-              {allSubmissions.map((sub) => {
-                const isSelected = selectedSub?.id === sub.id;
-                return (
-                  <div
-                    key={sub.id}
-                    onClick={() => onSelectSubmission(sub.id)}
-                    className={`p-3.5 rounded-xl border text-xs cursor-pointer transition flex flex-col gap-1.5 ${
-                      isSelected
-                        ? 'border-brand-500 bg-brand-50/70 shadow-xs'
-                        : 'border-slate-200 hover:bg-slate-50'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="font-bold text-slate-900 truncate">
-                        {sub.title}
-                      </span>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${getStatusBadge(
-                          sub.status
-                        )}`}
-                      >
-                        {sub.status}
-                      </span>
-                    </div>
+            <div className="space-y-2 max-h-[580px] overflow-y-auto pr-1">
+              {displayList.length > 0 ? (
+                displayList.map((sub) => {
+                  const isSelected = selectedSub?.id === sub.id;
+                  return (
+                    <div
+                      key={sub.id}
+                      onClick={() => onSelectSubmission(sub.id)}
+                      className={`p-3.5 rounded-xl border text-xs cursor-pointer transition flex flex-col gap-1.5 ${
+                        isSelected
+                          ? 'border-brand-500 bg-brand-50/70 shadow-xs'
+                          : 'border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-bold text-slate-900 truncate">
+                          {sub.title}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${getStatusBadge(
+                            sub.status
+                          )}`}
+                        >
+                          {sub.status}
+                        </span>
+                      </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-500">
-                      <span>{sub.content_type}</span>
-                      <span>{sub.findings?.length || 0} findings</span>
+                      <div className="flex items-center justify-between text-[11px] text-slate-500">
+                        <span>{sub.content_type}</span>
+                        <span>{sub.findings?.length || 0} findings</span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              ) : (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  No submissions in this filter.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -153,7 +182,7 @@ export default function ReviewQueue({
         <div className="lg:col-span-8 space-y-4">
           {selectedSub ? (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-6">
-              {/* Submission Header Info */}
+              {/* Submission Header */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                 <div>
                   <div className="flex items-center gap-2">
@@ -169,8 +198,7 @@ export default function ReviewQueue({
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Channel: <strong>{selectedSub.content_type}</strong> | Submitted by Creator #
-                    {selectedSub.submitted_by || 2}
+                    Channel: <strong>{selectedSub.content_type}</strong> | Submitted by Content Creator
                   </p>
                 </div>
               </div>
@@ -181,7 +209,7 @@ export default function ReviewQueue({
                 <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
-                      Original Content Draft
+                      Original Draft
                     </span>
                     <span className="text-[10px] text-slate-400">Initial Submission</span>
                   </div>
@@ -190,7 +218,7 @@ export default function ReviewQueue({
                   </div>
                 </div>
 
-                {/* Revised / Audited Copy */}
+                {/* Revised Copy */}
                 <div className="p-4 rounded-xl border border-brand-200 bg-brand-50/40">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-brand-900 uppercase tracking-wide">
@@ -255,15 +283,15 @@ export default function ReviewQueue({
                   rows={2}
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Enter comments explaining approval or requested changes..."
+                  placeholder="Provide feedback explaining your decision or requested changes..."
                   className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500"
                 />
               </div>
 
-              {/* Reviewer Action Buttons */}
+              {/* Action Buttons */}
               <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100">
                 <span className="text-[11px] text-slate-400">
-                  Decision will be persistently logged into database audit history.
+                  Decision will be persistently logged in database audit history.
                 </span>
 
                 <div className="flex items-center gap-2.5">
@@ -271,6 +299,7 @@ export default function ReviewQueue({
                     onClick={() => handleDecision('request-changes')}
                     disabled={isSubmitting}
                     className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50"
+                    title="Return to Creator with revision feedback"
                   >
                     <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
                     <span>Request Changes</span>

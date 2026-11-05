@@ -251,3 +251,4 @@ FastAPI provides interactive Swagger documentation at **`/docs`**:
 - **Team:** REDO
 - **Round:** CodeNexus India 2026 – Round 2
 - **Demo Ready:** Fully functional full-stack application with zero mandatory login gates, ready for instant evaluation.
+

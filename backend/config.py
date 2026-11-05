@@ -23,3 +23,4 @@ if DATABASE_URL.startswith("postgres://"):
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 APP_ENV = os.getenv("APP_ENV", "development")
 SECRET_KEY = os.getenv("SECRET_KEY", "trustora-secret-key-hackathon-2026")
+
