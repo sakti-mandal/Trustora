@@ -7,7 +7,8 @@ import {
   History,
   Settings,
   ChevronRight,
-  SlidersHorizontal
+  SlidersHorizontal,
+  X
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -15,7 +16,9 @@ export default function Sidebar({
   onTabChange,
   currentRole,
   pendingCount = 0,
-  rulesCount = 0
+  rulesCount = 0,
+  isOpen = false,
+  onClose
 }) {
   const navItems = [
     {
@@ -57,9 +60,25 @@ export default function Sidebar({
     }
   ];
 
-  return (
-    <aside className="w-64 border-r border-slate-200 bg-white flex flex-col justify-between p-4 min-h-[calc(100vh-65px)]">
+  const handleItemClick = (id) => {
+    onTabChange(id);
+    if (onClose) onClose();
+  };
+
+  const content = (
+    <div className="flex flex-col justify-between h-full p-4">
       <div>
+        {/* Mobile Header with Close button */}
+        <div className="lg:hidden flex items-center justify-between pb-3 mb-3 border-b border-slate-200">
+          <span className="font-bold text-navy-900 text-sm">Navigation Menu</span>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* Navigation Items */}
         <div className="space-y-1">
           <p className="px-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
@@ -71,7 +90,7 @@ export default function Sidebar({
             return (
               <button
                 key={item.id}
-                onClick={() => onTabChange(item.id)}
+                onClick={() => handleItemClick(item.id)}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-brand-50 text-brand-900 font-semibold shadow-xs border border-brand-200/80'
@@ -106,7 +125,7 @@ export default function Sidebar({
       </div>
 
       {/* Role Quick Hint */}
-      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-1">
+      <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 space-y-1 mt-6">
         <div className="flex items-center gap-2 text-slate-800 font-semibold">
           <ShieldAlert className="w-3.5 h-3.5 text-brand-600" />
           <span>Active Role: {currentRole}</span>
@@ -117,6 +136,31 @@ export default function Sidebar({
           {currentRole === 'Reviewer' && 'Inspect submitted copy, add comments & approve or request changes.'}
         </p>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Persistent Sidebar (hidden on mobile/tablet) */}
+      <aside className="hidden lg:flex w-64 border-r border-slate-200 bg-white flex-col justify-between min-h-[calc(100vh-65px)] shrink-0">
+        {content}
+      </aside>
+
+      {/* Mobile Slide-out Drawer */}
+      {isOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity animate-in fade-in"
+            onClick={onClose}
+          />
+
+          {/* Drawer Content */}
+          <div className="relative w-72 max-w-[85vw] bg-white h-full shadow-2xl flex flex-col z-10 animate-in slide-in-from-left duration-200">
+            {content}
+          </div>
+        </div>
+      )}
+    </>
   );
 }

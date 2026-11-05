@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import OverviewDashboard from './components/OverviewDashboard';
@@ -13,7 +13,8 @@ import {
   loadDemoData,
   fetchDashboardStats,
   fetchBrandRules,
-  fetchContentSubmissions
+  fetchContentSubmissions,
+  fetchComplianceScore
 } from './api';
 
 export default function App() {
@@ -25,11 +26,24 @@ export default function App() {
   const [submissions, setSubmissions] = useState([]);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
+  const [complianceScoreData, setComplianceScoreData] = useState(null);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  // Load all initial data from persistent backend
-  const loadWorkspaceData = async () => {
+  // Load compliance score for active role & submission
+  const loadComplianceScore = useCallback(async (comp, role, subId) => {
+    const compId = comp?.id || 1;
+    try {
+      const score = await fetchComplianceScore(compId, role, subId);
+      setComplianceScoreData(score);
+    } catch (e) {
+      console.error('Failed to load compliance score:', e);
+    }
+  }, []);
+
+  // Load all initial workspace data from backend
+  const loadWorkspaceData = useCallback(async (forcedSubId) => {
     try {
       const [health, comps] = await Promise.all([
         fetchHealth().catch(() => null),
@@ -49,28 +63,41 @@ export default function App() {
       setRules(rls);
       setSubmissions(subs);
       setDashboardStats(stats);
-      if (subs?.length > 0 && !selectedSubmissionId) {
-        setSelectedSubmissionId(subs[0].id);
+
+      let targetSubId = (typeof forcedSubId === 'number' ? forcedSubId : null) || selectedSubmissionId;
+      if (subs?.length > 0 && !targetSubId) {
+        targetSubId = subs[0].id;
+        setSelectedSubmissionId(targetSubId);
       }
+
+      // Load Brand Compliance Score
+      await loadComplianceScore(activeComp, currentRole, targetSubId);
     } catch (err) {
       console.error('Error loading workspace data:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedSubmissionId, currentRole, loadComplianceScore]);
 
   useEffect(() => {
     loadWorkspaceData();
-  }, []);
+  }, [loadWorkspaceData]);
 
-  // Handle Reload / Reset Demo Data button
+  // Whenever role or selected submission changes, update the navbar score meter
+  useEffect(() => {
+    if (company) {
+      loadComplianceScore(company, currentRole, selectedSubmissionId);
+    }
+  }, [currentRole, selectedSubmissionId, company, loadComplianceScore]);
+
+  // Handle Reset Demo Data button
   const handleLoadDemo = async () => {
     setIsDemoLoading(true);
     try {
       await loadDemoData(company?.id || 1);
       await loadWorkspaceData();
     } catch (err) {
-      alert('Failed to reload workspace data');
+      alert('Failed to reset workspace data');
     } finally {
       setIsDemoLoading(false);
     }
@@ -91,8 +118,8 @@ export default function App() {
   const pendingCount = submissions.filter((s) => s.status === 'Pending Review').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-brand-600 selection:text-white">
-      {/* Top Navbar */}
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-brand-600 selection:text-white w-full overflow-x-hidden">
+      {/* Top Redesigned SaaS Navbar */}
       <Navbar
         currentRole={currentRole}
         onRoleChange={handleRoleChange}
@@ -102,22 +129,27 @@ export default function App() {
         isDemoLoading={isDemoLoading}
         onNavigate={setActiveTab}
         onSelectSubmission={setSelectedSubmissionId}
+        scoreData={complianceScoreData}
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+        isMobileSidebarOpen={isMobileSidebarOpen}
       />
 
       {/* Main Workspace Layout */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
+      <div className="flex-1 flex w-full relative">
+        {/* Sidebar (Desktop Persistent & Mobile Drawer) */}
         <Sidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
           currentRole={currentRole}
           pendingCount={pendingCount}
           rulesCount={rules.length}
+          isOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
         />
 
         {/* Content Viewport */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 min-w-0 w-full overflow-y-auto p-3.5 sm:p-6 md:p-8">
+          <div className="max-w-7xl mx-auto w-full min-w-0 space-y-6">
             {activeTab === 'overview' && (
               <OverviewDashboard
                 stats={dashboardStats}

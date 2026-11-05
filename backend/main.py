@@ -669,6 +669,181 @@ def get_submission_history(content_id: int, db: Session = Depends(get_db)):
     return db.query(ReviewHistory).filter(ReviewHistory.submission_id == content_id).order_by(desc(ReviewHistory.id)).all()
 
 
+# ---------------- COMPLIANCE SCORE METER ----------------
+def get_score_color(score: Optional[int]) -> str:
+    if score is None:
+        return "slate"
+    if score >= 90:
+        return "emerald"
+    elif score >= 75:
+        return "blue"
+    elif score >= 50:
+        return "amber"
+    else:
+        return "rose"
+
+
+def compute_submission_score_data(sub):
+    if not sub:
+        return None
+    # Check if submission was ever analyzed
+    has_analyzed_history = any(h.action == "Analyzed" for h in sub.history) if sub.history else False
+    if not has_analyzed_history and sub.status == "Draft" and not sub.findings:
+        return None
+
+    score = 100
+    category_scores = {
+        "brand_tone": 100,
+        "approved_facts": 100,
+        "preferred_terms": 100,
+        "prohibited_terms": 100,
+        "brand_guidelines": 100
+    }
+
+    for f in sub.findings:
+        sev = f.severity or "Medium"
+        cat = (f.issue_category or "").lower()
+        deduction = 20 if sev == "High" else 10 if sev == "Medium" else 5
+        score -= deduction
+
+        if "tone" in cat:
+            category_scores["brand_tone"] = max(0, category_scores["brand_tone"] - deduction)
+        elif "unsupported" in cat or "claim" in cat or "fact" in cat:
+            category_scores["approved_facts"] = max(0, category_scores["approved_facts"] - deduction)
+        elif "preferred" in cat:
+            category_scores["preferred_terms"] = max(0, category_scores["preferred_terms"] - deduction)
+        elif "prohibited" in cat:
+            category_scores["prohibited_terms"] = max(0, category_scores["prohibited_terms"] - deduction)
+        else:
+            category_scores["brand_guidelines"] = max(0, category_scores["brand_guidelines"] - deduction)
+
+    score = max(0, min(100, score))
+    return {
+        "overall_score": score,
+        "category_scores": category_scores,
+        "last_analyzed": (sub.updated_at or sub.created_at).isoformat() if (sub.updated_at or sub.created_at) else None,
+        "submission_title": sub.title
+    }
+
+
+@app.get("/compliance/score")
+def get_compliance_score(
+    company_id: int = Query(1),
+    role: str = Query("Content Creator"),
+    submission_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns actual role-based Brand Compliance Score:
+    - Content Creator: Selected submission score
+    - Reviewer: Currently reviewed submission score
+    - Admin: Company average score across all analyzed submissions
+    """
+    actual_company_id = company_id if isinstance(company_id, int) else 1
+    actual_role = role if isinstance(role, str) else "Content Creator"
+    actual_sub_id = submission_id if isinstance(submission_id, int) else None
+
+    # 1. ADMIN ROLE: Average across company
+    if actual_role == "Admin":
+        all_subs = db.query(ContentSubmission).filter(ContentSubmission.company_id == actual_company_id).all()
+        scored_items = []
+        for s in all_subs:
+            sc = compute_submission_score_data(s)
+            if sc:
+                scored_items.append(sc)
+
+        if not scored_items:
+            return {
+                "role": "Admin",
+                "has_score": False,
+                "overall_score": None,
+                "status_label": "Not Analysed",
+                "color": "slate",
+                "category_scores": None,
+                "last_analyzed": None,
+                "submission_title": "No submissions analysed yet"
+            }
+
+        avg_overall = round(sum(item["overall_score"] for item in scored_items) / len(scored_items))
+        avg_categories = {
+            "brand_tone": round(sum(item["category_scores"]["brand_tone"] for item in scored_items) / len(scored_items)),
+            "approved_facts": round(sum(item["category_scores"]["approved_facts"] for item in scored_items) / len(scored_items)),
+            "preferred_terms": round(sum(item["category_scores"]["preferred_terms"] for item in scored_items) / len(scored_items)),
+            "prohibited_terms": round(sum(item["category_scores"]["prohibited_terms"] for item in scored_items) / len(scored_items)),
+            "brand_guidelines": round(sum(item["category_scores"]["brand_guidelines"] for item in scored_items) / len(scored_items))
+        }
+        latest_date = max(item["last_analyzed"] for item in scored_items if item["last_analyzed"])
+
+        return {
+            "role": "Admin",
+            "has_score": True,
+            "overall_score": avg_overall,
+            "status_label": "Brand Compliance (Company Average)",
+            "color": get_score_color(avg_overall),
+            "category_scores": avg_categories,
+            "last_analyzed": latest_date,
+            "submission_title": f"Company Average ({len(scored_items)} audited submissions)"
+        }
+
+    # 2. CONTENT CREATOR & REVIEWER ROLES: Selected Submission
+    target_sub = None
+    if actual_sub_id:
+        target_sub = db.query(ContentSubmission).filter(
+            ContentSubmission.id == actual_sub_id,
+            ContentSubmission.company_id == actual_company_id
+        ).first()
+
+    if not target_sub:
+        if actual_role == "Reviewer":
+            # Priority to pending reviews
+            target_sub = db.query(ContentSubmission).filter(
+                ContentSubmission.company_id == actual_company_id,
+                ContentSubmission.status == "Pending Review"
+            ).order_by(desc(ContentSubmission.updated_at)).first()
+
+        if not target_sub:
+            # Fallback to latest updated submission
+            target_sub = db.query(ContentSubmission).filter(
+                ContentSubmission.company_id == actual_company_id
+            ).order_by(desc(ContentSubmission.updated_at)).first()
+
+    if not target_sub:
+        return {
+            "role": actual_role,
+            "has_score": False,
+            "overall_score": None,
+            "status_label": "Not Analysed",
+            "color": "slate",
+            "category_scores": None,
+            "last_analyzed": None,
+            "submission_title": "No submission"
+        }
+
+    score_data = compute_submission_score_data(target_sub)
+    if not score_data:
+        return {
+            "role": actual_role,
+            "has_score": False,
+            "overall_score": None,
+            "status_label": "Not Analysed",
+            "color": "slate",
+            "category_scores": None,
+            "last_analyzed": None,
+            "submission_title": target_sub.title
+        }
+
+    return {
+        "role": actual_role,
+        "has_score": True,
+        "overall_score": score_data["overall_score"],
+        "status_label": "Brand Compliance",
+        "color": get_score_color(score_data["overall_score"]),
+        "category_scores": score_data["category_scores"],
+        "last_analyzed": score_data["last_analyzed"],
+        "submission_title": score_data["submission_title"]
+    }
+
+
 # ---------------- DASHBOARD STATS ----------------
 @app.get("/dashboard/stats", response_model=DashboardStats)
 def get_dashboard_stats(company_id: int = Query(1), db: Session = Depends(get_db)):

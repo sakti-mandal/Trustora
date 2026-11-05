@@ -110,7 +110,7 @@ export default function ContentCreator({
 
       const res = await analyzeContentSubmission(subId);
       setAnalysisResult(res);
-      await onRefresh();
+      await onRefresh(subId);
     } catch (err) {
       alert(err.message || 'Analysis failed');
     } finally {

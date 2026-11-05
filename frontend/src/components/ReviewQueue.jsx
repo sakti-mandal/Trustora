@@ -289,16 +289,16 @@ export default function ReviewQueue({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-100">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-slate-100">
                 <span className="text-[11px] text-slate-400">
                   Decision will be persistently logged in database audit history.
                 </span>
 
-                <div className="flex items-center gap-2.5">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
                   <button
                     onClick={() => handleDecision('request-changes')}
                     disabled={isSubmitting}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50"
                     title="Return to Creator with revision feedback"
                   >
                     <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
@@ -308,7 +308,7 @@ export default function ReviewQueue({
                   <button
                     onClick={() => handleDecision('reject')}
                     disabled={isSubmitting}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50"
                   >
                     <XCircle className="w-3.5 h-3.5 text-rose-600" />
                     <span>Reject Content</span>
@@ -317,7 +317,7 @@ export default function ReviewQueue({
                   <button
                     onClick={() => handleDecision('approve')}
                     disabled={isSubmitting}
-                    className="flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm active:scale-95 disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition shadow-sm active:scale-95 disabled:opacity-50"
                   >
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Approve Content</span>

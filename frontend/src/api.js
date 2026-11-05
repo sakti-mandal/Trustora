@@ -5,6 +5,13 @@ export async function fetchHealth() {
   return res.json();
 }
 
+export async function fetchComplianceScore(companyId = 1, role = 'Content Creator', submissionId = null) {
+  let url = `${API_BASE}/compliance/score?company_id=${companyId}&role=${encodeURIComponent(role)}`;
+  if (submissionId) url += `&submission_id=${submissionId}`;
+  const res = await fetch(url);
+  return res.json();
+}
+
 export async function fetchCompanies() {
   const res = await fetch(`${API_BASE}/companies`);
   return res.json();
