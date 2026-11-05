@@ -7,6 +7,7 @@ import ContentCreator from './components/ContentCreator';
 import ReviewQueue from './components/ReviewQueue';
 import AuditHistory from './components/AuditHistory';
 import SettingsModal from './components/SettingsModal';
+import GuidelinePdfHub from './components/GuidelinePdfHub';
 import {
   fetchHealth,
   fetchCompanies,
@@ -14,22 +15,42 @@ import {
   fetchDashboardStats,
   fetchBrandRules,
   fetchContentSubmissions,
-  fetchComplianceScore
+  fetchComplianceScore,
+  fetchGuidelines
 } from './api';
 
 export default function App() {
   const [currentRole, setCurrentRole] = useState('Content Creator');
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('creator-dashboard');
   const [company, setCompany] = useState(null);
   const [systemStatus, setSystemStatus] = useState(null);
   const [rules, setRules] = useState([]);
   const [submissions, setSubmissions] = useState([]);
+  const [guidelinesCount, setGuidelinesCount] = useState(0);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
   const [complianceScoreData, setComplianceScoreData] = useState(null);
   const [isDemoLoading, setIsDemoLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Dark Mode Theme Management
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('trustora_theme') || 'light';
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('trustora_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // Load compliance score for active role & submission
   const loadComplianceScore = useCallback(async (comp, role, subId) => {
@@ -54,15 +75,17 @@ export default function App() {
       const activeComp = comps?.[0] || { id: 1, company_name: 'NOVA TECH' };
       setCompany(activeComp);
 
-      const [rls, subs, stats] = await Promise.all([
+      const [rls, subs, stats, gList] = await Promise.all([
         fetchBrandRules(activeComp.id).catch(() => []),
         fetchContentSubmissions(activeComp.id).catch(() => []),
-        fetchDashboardStats(activeComp.id).catch(() => null)
+        fetchDashboardStats(activeComp.id).catch(() => null),
+        fetchGuidelines(activeComp.id).catch(() => [])
       ]);
 
       setRules(rls);
       setSubmissions(subs);
       setDashboardStats(stats);
+      setGuidelinesCount(gList?.length || 0);
 
       let targetSubId = (typeof forcedSubId === 'number' ? forcedSubId : null) || selectedSubmissionId;
       if (subs?.length > 0 && !targetSubId) {
@@ -103,23 +126,23 @@ export default function App() {
     }
   };
 
-  // Switch Role helper
+  // Switch Role helper — immediately opens that persona's dedicated dashboard!
   const handleRoleChange = (newRole) => {
     setCurrentRole(newRole);
     if (newRole === 'Admin') {
-      setActiveTab('brand-rules');
+      setActiveTab('admin-dashboard');
     } else if (newRole === 'Reviewer') {
-      setActiveTab('review-queue');
+      setActiveTab('reviewer-dashboard');
     } else if (newRole === 'Content Creator') {
-      setActiveTab('content-review');
+      setActiveTab('creator-dashboard');
     }
   };
 
   const pendingCount = submissions.filter((s) => s.status === 'Pending Review').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-brand-600 selection:text-white w-full overflow-x-hidden">
-      {/* Top Redesigned SaaS Navbar */}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-brand-600 selection:text-white w-full overflow-x-hidden transition-colors duration-200">
+      {/* Top SaaS Navbar with Interactive Score Meter & Theme Switch */}
       <Navbar
         currentRole={currentRole}
         onRoleChange={handleRoleChange}
@@ -132,6 +155,8 @@ export default function App() {
         scoreData={complianceScoreData}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
         isMobileSidebarOpen={isMobileSidebarOpen}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Workspace Layout */}
@@ -143,13 +168,73 @@ export default function App() {
           currentRole={currentRole}
           pendingCount={pendingCount}
           rulesCount={rules.length}
+          guidelinesCount={guidelinesCount}
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
         />
 
         {/* Content Viewport */}
-        <main className="flex-1 min-w-0 w-full overflow-y-auto p-3.5 sm:p-6 md:p-8">
+        <main className="flex-1 min-w-0 w-full overflow-y-auto p-3.5 sm:p-6 md:p-8 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
           <div className="max-w-7xl mx-auto w-full min-w-0 space-y-6">
+            
+            {/* 1. ADMIN DEDICATED DASHBOARD */}
+            {activeTab === 'admin-dashboard' && (
+              <BrandRulesAdmin
+                company={company}
+                rules={rules}
+                companyId={company?.id || 1}
+                onRefresh={loadWorkspaceData}
+                scoreData={complianceScoreData}
+                onNavigate={setActiveTab}
+              />
+            )}
+
+            {/* 2. CONTENT CREATOR DEDICATED DASHBOARD */}
+            {activeTab === 'creator-dashboard' && (
+              <ContentCreator
+                submissions={submissions}
+                selectedSubmissionId={selectedSubmissionId}
+                onSelectSubmission={setSelectedSubmissionId}
+                companyId={company?.id || 1}
+                onRefresh={loadWorkspaceData}
+                onRoleChange={handleRoleChange}
+                onNavigate={setActiveTab}
+                scoreData={complianceScoreData}
+              />
+            )}
+
+            {/* 3. REVIEWER DEDICATED DASHBOARD */}
+            {activeTab === 'reviewer-dashboard' && (
+              <ReviewQueue
+                submissions={submissions}
+                selectedSubmissionId={selectedSubmissionId}
+                onSelectSubmission={setSelectedSubmissionId}
+                onRefresh={loadWorkspaceData}
+                onNavigate={setActiveTab}
+                onRoleChange={handleRoleChange}
+                scoreData={complianceScoreData}
+              />
+            )}
+
+            {/* 4. SUGGESTION & GUIDELINE PDF HUB (Everyone can upload & inspect) */}
+            {activeTab === 'guidelines-hub' && (
+              <GuidelinePdfHub
+                companyId={company?.id || 1}
+                currentRole={currentRole}
+                onRulesUpdated={loadWorkspaceData}
+              />
+            )}
+
+            {/* 5. AUDIT HISTORY & DECISION TRAIL */}
+            {activeTab === 'history' && (
+              <AuditHistory
+                submissions={submissions}
+                onSelectSubmission={setSelectedSubmissionId}
+                onNavigate={setActiveTab}
+              />
+            )}
+
+            {/* 6. COMPANY OVERVIEW */}
             {activeTab === 'overview' && (
               <OverviewDashboard
                 stats={dashboardStats}
@@ -159,46 +244,7 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'brand-rules' && (
-              <BrandRulesAdmin
-                company={company}
-                rules={rules}
-                companyId={company?.id || 1}
-                onRefresh={loadWorkspaceData}
-              />
-            )}
-
-            {activeTab === 'content-review' && (
-              <ContentCreator
-                submissions={submissions}
-                selectedSubmissionId={selectedSubmissionId}
-                onSelectSubmission={setSelectedSubmissionId}
-                companyId={company?.id || 1}
-                onRefresh={loadWorkspaceData}
-                onRoleChange={handleRoleChange}
-                onNavigate={setActiveTab}
-              />
-            )}
-
-            {activeTab === 'review-queue' && (
-              <ReviewQueue
-                submissions={submissions}
-                selectedSubmissionId={selectedSubmissionId}
-                onSelectSubmission={setSelectedSubmissionId}
-                onRefresh={loadWorkspaceData}
-                onNavigate={setActiveTab}
-                onRoleChange={handleRoleChange}
-              />
-            )}
-
-            {activeTab === 'history' && (
-              <AuditHistory
-                submissions={submissions}
-                onSelectSubmission={setSelectedSubmissionId}
-                onNavigate={setActiveTab}
-              />
-            )}
-
+            {/* 7. SYSTEM SETTINGS */}
             {activeTab === 'settings' && (
               <SettingsModal
                 systemStatus={systemStatus}
