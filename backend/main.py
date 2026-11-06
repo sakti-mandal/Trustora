@@ -14,7 +14,7 @@ from backend.models import (
     AIFinding, ReviewDecision, ReviewHistory, Notification
 )
 from backend.schemas import (
-    CompanyCreate, CompanyUpdate, CompanyOut, UserCreate, UserOut,
+    CompanyCreate, CompanyUpdate, CompanyOut, UserCreate, UserAdminUpdate, UserOut,
     LoginRequest, LoginResponse,
     BrandGuidelineOut, BrandRuleCreate, BrandRuleUpdate, BrandRuleOut,
     ContentSubmissionCreate, ContentSubmissionUpdate, ContentSubmissionOut,
@@ -101,6 +101,9 @@ def update_company(company_id: int, payload: CompanyUpdate, db: Session = Depend
         company.industry = payload.industry
     if payload.description is not None:
         company.description = payload.description
+    if payload.email_domain is not None:
+        clean_domain = payload.email_domain.strip().lstrip("@").lower()
+        company.email_domain = clean_domain
     db.commit()
     db.refresh(company)
     return company
@@ -116,27 +119,137 @@ def load_demo_data(company_id: Optional[int] = None, db: Session = Depends(get_d
     }
 
 
-# ---------------- USERS & AUTH ----------------
+# ---------------- USERS & AUTH (ORGANIZATION DOMAIN & ROLE PROVISIONING) ----------------
 @app.get("/auth/users", response_model=List[UserOut])
 def list_users(company_id: int = Query(1), db: Session = Depends(get_db)):
-    return db.query(User).filter(User.company_id == company_id).all()
+    users = db.query(User).filter(User.company_id == company_id).order_by(User.id.asc()).all()
+    result = []
+    for u in users:
+        result.append(UserOut(
+            id=u.id,
+            company_id=u.company_id,
+            full_name=u.full_name,
+            email=u.email,
+            role=u.role,
+            created_at=u.created_at,
+            has_password=bool(u.password_hash)
+        ))
+    return result
 
 
+@app.post("/auth/users", response_model=UserOut)
 @app.post("/auth/register", response_model=UserOut)
-def register_user(payload: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == payload.email).first()
+def create_or_register_user(payload: UserCreate, db: Session = Depends(get_db)):
+    clean_email = payload.email.strip().lower()
+    if not clean_email or "@" not in clean_email:
+        raise HTTPException(status_code=400, detail="A valid email address with domain is required")
+    
+    # Check for existing email in company
+    existing = db.query(User).filter(User.email.ilike(clean_email)).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail=f"User with email '{clean_email}' already exists.")
+
+    # Normalize role
+    requested_role = payload.role or "Content Creator"
+    lower_role = requested_role.lower()
+    if "admin" in lower_role:
+        norm_role = "Admin"
+    elif "approv" in lower_role or "review" in lower_role:
+        norm_role = "Reviewer"
+    else:
+        norm_role = "Content Creator"
+
+    # Set password
+    raw_password = (payload.password or "").strip()
+    if not raw_password:
+        raw_password = "trustora123"
+
     user = User(
-        company_id=payload.company_id,
-        full_name=payload.full_name,
-        email=payload.email,
-        role=payload.role
+        company_id=payload.company_id or 1,
+        full_name=payload.full_name.strip() or clean_email.split("@")[0].title(),
+        email=clean_email,
+        password_hash=raw_password,
+        role=norm_role
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+
+    return UserOut(
+        id=user.id,
+        company_id=user.company_id,
+        full_name=user.full_name,
+        email=user.email,
+        role=user.role,
+        created_at=user.created_at,
+        has_password=True
+    )
+
+
+@app.put("/auth/users/{user_id}", response_model=UserOut)
+def update_user_credentials(user_id: int, payload: UserAdminUpdate, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if payload.full_name is not None and payload.full_name.strip():
+        user.full_name = payload.full_name.strip()
+
+    if payload.email is not None and payload.email.strip():
+        clean_email = payload.email.strip().lower()
+        # Verify no duplicate email
+        dup = db.query(User).filter(User.email.ilike(clean_email), User.id != user_id).first()
+        if dup:
+            raise HTTPException(status_code=400, detail=f"Email '{clean_email}' is already in use by another user.")
+        user.email = clean_email
+
+    if payload.role is not None and payload.role.strip():
+        lower_role = payload.role.lower()
+        if "admin" in lower_role:
+            user.role = "Admin"
+        elif "approv" in lower_role or "review" in lower_role:
+            user.role = "Reviewer"
+        else:
+            user.role = "Content Creator"
+
+    if payload.password is not None and payload.password.strip():
+        user.password_hash = payload.password.strip()
+
+    db.commit()
+    db.refresh(user)
+
+    return UserOut(
+        id=user.id,
+        company_id=user.company_id,
+        full_name=user.full_name,
+        email=user.email,
+        role=user.role,
+        created_at=user.created_at,
+        has_password=bool(user.password_hash)
+    )
+
+
+@app.delete("/auth/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.role == "Admin":
+        admin_count = db.query(User).filter(User.company_id == user.company_id, User.role == "Admin").count()
+        if admin_count <= 1:
+            raise HTTPException(status_code=400, detail="Cannot delete the primary organization Administrator account.")
+
+    user_name = user.full_name
+    user_email = user.email
+    db.delete(user)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Successfully removed account for {user_name} ({user_email})",
+        "id": user_id
+    }
 
 
 @app.post("/auth/login", response_model=LoginResponse)
@@ -159,9 +272,10 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     else:
         norm_role = "Content Creator"
 
-    # Find user or auto-provision for hackathon convenience
+    # Find user
     user = db.query(User).filter(User.email.ilike(email)).first()
     if not user:
+        # Auto-provision custom evaluator user if not registered yet
         name_part = email.split("@")[0].replace(".", " ").title()
         user = User(
             company_id=1,
@@ -174,13 +288,28 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
     else:
-        if payload.role:
-            user.role = norm_role
+        # Check password if set by Admin
+        if user.password_hash:
+            if user.password_hash != password:
+                raise HTTPException(
+                    status_code=401,
+                    detail=f"Invalid password for {user.email}. Please verify the credentials issued by your Administrator."
+                )
+        else:
+            # First-time demo user setting their password
+            user.password_hash = password
             db.commit()
-            db.refresh(user)
 
     return {
-        "user": user,
+        "user": UserOut(
+            id=user.id,
+            company_id=user.company_id,
+            full_name=user.full_name,
+            email=user.email,
+            role=user.role,
+            created_at=user.created_at,
+            has_password=True
+        ),
         "token": f"trustora-auth-session-{user.id}",
         "message": f"Successfully logged in as {user.role}"
     }

@@ -207,3 +207,47 @@ export async function fetchSubmissionHistory(id) {
   return res.json();
 }
 
+// Organization Team & Domain Users
+export async function fetchUsers(companyId = 1) {
+  const res = await fetch(`${API_BASE}/auth/users?company_id=${companyId}`);
+  if (!res.ok) throw new Error('Failed to load team users');
+  return res.json();
+}
+
+export async function createTeamUser(userData) {
+  const res = await fetch(`${API_BASE}/auth/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to create team member account');
+  }
+  return res.json();
+}
+
+export async function updateTeamUser(userId, updates) {
+  const res = await fetch(`${API_BASE}/auth/users/${userId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updates)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to update user credentials');
+  }
+  return res.json();
+}
+
+export async function deleteTeamUser(userId) {
+  const res = await fetch(`${API_BASE}/auth/users/${userId}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to delete user');
+  }
+  return res.json();
+}
+

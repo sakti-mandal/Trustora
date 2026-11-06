@@ -13,6 +13,7 @@ class Company(Base):
     company_name = Column(String(255), nullable=False)
     industry = Column(String(100), nullable=True)
     description = Column(Text, nullable=True)
+    email_domain = Column(String(255), default="novatech.io", nullable=True)
     created_at = Column(DateTime, default=utcnow)
 
     # Relationships

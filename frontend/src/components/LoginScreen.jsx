@@ -310,3 +310,4 @@ export default function LoginScreen({ onLoginSuccess, theme, onToggleTheme }) {
     </div>
   );
 }
+

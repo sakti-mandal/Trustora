@@ -7,6 +7,7 @@ class CompanyBase(BaseModel):
     company_name: str
     industry: Optional[str] = None
     description: Optional[str] = None
+    email_domain: Optional[str] = "novatech.io"
 
 class CompanyCreate(CompanyBase):
     pass
@@ -15,6 +16,7 @@ class CompanyUpdate(BaseModel):
     company_name: Optional[str] = None
     industry: Optional[str] = None
     description: Optional[str] = None
+    email_domain: Optional[str] = None
 
 class CompanyOut(CompanyBase):
     id: int
@@ -25,10 +27,16 @@ class CompanyOut(CompanyBase):
 class UserBase(BaseModel):
     full_name: str
     email: str
-    role: str = "Creator"
+    role: str = "Content Creator"
     company_id: int
 
 class UserCreate(UserBase):
+    password: Optional[str] = None
+
+class UserAdminUpdate(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    role: Optional[str] = None
     password: Optional[str] = None
 
 class LoginRequest(BaseModel):
@@ -37,13 +45,14 @@ class LoginRequest(BaseModel):
     role: Optional[str] = None
 
 class LoginResponse(BaseModel):
-    user: UserOut
+    user: "UserOut"
     token: str
     message: str
 
 class UserOut(UserBase):
     id: int
     created_at: Optional[datetime] = None
+    has_password: Optional[bool] = False
     model_config = ConfigDict(from_attributes=True)
 
 # Brand Guidelines

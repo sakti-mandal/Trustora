@@ -9,6 +9,7 @@ import AuditHistory from './components/AuditHistory';
 import SettingsModal from './components/SettingsModal';
 import GuidelinePdfHub from './components/GuidelinePdfHub';
 import LoginScreen from './components/LoginScreen';
+import TeamDomainAdmin from './components/TeamDomainAdmin';
 import {
   fetchHealth,
   fetchCompanies,
@@ -17,7 +18,8 @@ import {
   fetchBrandRules,
   fetchContentSubmissions,
   fetchComplianceScore,
-  fetchGuidelines
+  fetchGuidelines,
+  fetchUsers
 } from './api';
 
 export default function App() {
@@ -48,6 +50,7 @@ export default function App() {
   const [rules, setRules] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [guidelinesCount, setGuidelinesCount] = useState(0);
+  const [usersCount, setUsersCount] = useState(0);
   const [dashboardStats, setDashboardStats] = useState(null);
   const [selectedSubmissionId, setSelectedSubmissionId] = useState(null);
   const [complianceScoreData, setComplianceScoreData] = useState(null);
@@ -96,17 +99,19 @@ export default function App() {
       const activeComp = comps?.[0] || { id: 1, company_name: 'NOVA TECH' };
       setCompany(activeComp);
 
-      const [rls, subs, stats, gList] = await Promise.all([
+      const [rls, subs, stats, gList, uList] = await Promise.all([
         fetchBrandRules(activeComp.id).catch(() => []),
         fetchContentSubmissions(activeComp.id).catch(() => []),
         fetchDashboardStats(activeComp.id).catch(() => null),
-        fetchGuidelines(activeComp.id).catch(() => [])
+        fetchGuidelines(activeComp.id).catch(() => []),
+        fetchUsers(activeComp.id).catch(() => [])
       ]);
 
       setRules(rls);
       setSubmissions(subs);
       setDashboardStats(stats);
       setGuidelinesCount(gList?.length || 0);
+      setUsersCount(uList?.length || 0);
 
       let targetSubId = (typeof forcedSubId === 'number' ? forcedSubId : null) || selectedSubmissionId;
       if (subs?.length > 0 && !targetSubId) {
@@ -236,6 +241,7 @@ export default function App() {
           pendingCount={pendingCount}
           rulesCount={rules.length}
           guidelinesCount={guidelinesCount}
+          usersCount={usersCount}
           isOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
         />
@@ -253,6 +259,15 @@ export default function App() {
                 onRefresh={loadWorkspaceData}
                 scoreData={complianceScoreData}
                 onNavigate={setActiveTab}
+              />
+            )}
+
+            {/* 1b. TEAM & DOMAIN ACCOUNTS (ADMIN PROVISIONING) */}
+            {activeTab === 'team-domain' && (
+              <TeamDomainAdmin
+                company={company}
+                companyId={company?.id || 1}
+                onRefreshWorkspace={loadWorkspaceData}
               />
             )}
 

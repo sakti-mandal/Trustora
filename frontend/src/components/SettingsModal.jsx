@@ -98,6 +98,13 @@ export default function SettingsModal({ systemStatus, company, rulesCount }) {
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <span className="text-slate-600 dark:text-slate-300 font-medium">Organization Domain ID:</span>
+              <span className="font-mono font-bold text-violet-600 dark:text-violet-400">
+                @{company?.email_domain || 'novatech.io'}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <span className="text-slate-600 dark:text-slate-300 font-medium">Theme Mode:</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">
                 Light & Dark Mode Enabled

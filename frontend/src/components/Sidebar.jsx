@@ -14,7 +14,9 @@ import {
   UserCheck,
   Shield,
   Sparkles,
-  Layers
+  Layers,
+  Users,
+  KeyRound
 } from 'lucide-react';
 
 export default function Sidebar({
@@ -24,6 +26,7 @@ export default function Sidebar({
   pendingCount = 0,
   rulesCount = 0,
   guidelinesCount = 0,
+  usersCount = 0,
   isOpen = false,
   onClose
 }) {
@@ -36,6 +39,13 @@ export default function Sidebar({
           icon: SlidersHorizontal,
           badge: rulesCount > 0 ? `${rulesCount} Rules` : null,
           badgeColor: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200/80 dark:border-indigo-800'
+        },
+        {
+          id: 'team-domain',
+          label: 'Team & Domain Accounts',
+          icon: Users,
+          badge: usersCount > 0 ? `${usersCount} Users` : 'Active',
+          badgeColor: 'bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border-violet-200/80 dark:border-violet-800'
         },
         {
           id: 'guidelines-hub',

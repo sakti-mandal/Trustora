@@ -18,7 +18,9 @@ import {
   FileText,
   UploadCloud,
   Layers,
-  Search
+  Search,
+  Users,
+  KeyRound
 } from 'lucide-react';
 import { updateCompany, createBrandRule, updateBrandRule, deleteBrandRule } from '../api';
 import ComplianceScoreCard from './ComplianceScoreCard';
@@ -34,6 +36,7 @@ export default function BrandRulesAdmin({
   // Company Configuration State
   const [compName, setCompName] = useState(company?.company_name || 'NOVA TECH');
   const [compIndustry, setCompIndustry] = useState(company?.industry || 'Enterprise Cloud & AI Solutions');
+  const [compDomain, setCompDomain] = useState(company?.email_domain || 'novatech.io');
   const [compDesc, setCompDesc] = useState(
     company?.description || 'NOVA TECH provides secure, enterprise-grade cloud intelligence and governance platforms for modern organizations.'
   );
@@ -71,7 +74,8 @@ export default function BrandRulesAdmin({
       await updateCompany(companyId, {
         company_name: compName,
         industry: compIndustry,
-        description: compDesc
+        description: compDesc,
+        email_domain: compDomain.trim().replace(/^@/, '').toLowerCase()
       });
       setCompSavedSuccess(true);
       setTimeout(() => setCompSavedSuccess(false), 3000);
@@ -187,6 +191,16 @@ export default function BrandRulesAdmin({
         <div className="flex items-center gap-2.5">
           {onNavigate && (
             <button
+              onClick={() => onNavigate('team-domain')}
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-violet-50 dark:bg-violet-950/60 hover:bg-violet-100 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 rounded-2xl text-xs font-bold transition shadow-2xs active:scale-95 cursor-pointer border border-violet-200 dark:border-violet-800"
+            >
+              <Users className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+              <span>Team & Domain Accounts</span>
+            </button>
+          )}
+
+          {onNavigate && (
+            <button
               onClick={() => onNavigate('guidelines-hub')}
               className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100/90 dark:bg-slate-800/90 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-2xl text-xs font-bold transition shadow-2xs active:scale-95 cursor-pointer"
             >
@@ -221,6 +235,32 @@ export default function BrandRulesAdmin({
         onRefresh={onRefresh}
       />
 
+      {/* QUICK ACCESS: ORGANIZER DOMAIN & CREDENTIALS BANNER */}
+      {onNavigate && (
+        <div className="bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-transparent dark:from-violet-950/40 dark:via-indigo-950/30 dark:to-transparent border border-violet-200/80 dark:border-violet-800/60 rounded-3xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-violet-600 text-white flex items-center justify-center shrink-0 shadow-md">
+              <KeyRound className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+                Team & Organization Domain Provisioning
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Admin has full power to issue domain IDs (<code className="font-mono text-violet-600 dark:text-violet-400">@{compDomain}</code>), roles, and passwords for Content Creators and Reviewers.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onNavigate('team-domain')}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold rounded-2xl bg-violet-600 hover:bg-violet-700 text-white shadow-xs hover:shadow transition-all shrink-0 active:scale-95 cursor-pointer"
+          >
+            <Users className="w-4 h-4" />
+            <span>Manage Domain Credentials</span>
+          </button>
+        </div>
+      )}
+
       {/* 1. COMPANY INFORMATION CONFIGURATION */}
       <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm p-6 sm:p-7">
         <div className="flex items-center justify-between mb-5 pb-3.5 border-b border-slate-100 dark:border-slate-800">
@@ -237,7 +277,7 @@ export default function BrandRulesAdmin({
         </div>
 
         <form onSubmit={handleSaveCompany} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
             <div>
               <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider text-[10px]">Company Name</label>
               <input
@@ -257,6 +297,20 @@ export default function BrandRulesAdmin({
                 onChange={(e) => setCompIndustry(e.target.value)}
                 className="w-full px-4 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white font-semibold transition"
               />
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1.5 uppercase tracking-wider text-[10px]">Primary Domain ID</label>
+              <div className="flex rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700/80">
+                <span className="inline-flex items-center px-3 bg-slate-100 dark:bg-slate-800 text-slate-400 font-mono text-xs">@</span>
+                <input
+                  type="text"
+                  value={compDomain}
+                  onChange={(e) => setCompDomain(e.target.value)}
+                  placeholder="novatech.io"
+                  className="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/80 focus:outline-none text-slate-900 dark:text-white font-mono font-semibold transition"
+                />
+              </div>
             </div>
           </div>
 
