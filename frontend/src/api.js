@@ -1,5 +1,18 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
+export async function loginUser(email, password, role) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, role })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Login failed. Please check your credentials.');
+  }
+  return res.json();
+}
+
 export async function fetchHealth() {
   const res = await fetch(`${API_BASE}/health`);
   return res.json();

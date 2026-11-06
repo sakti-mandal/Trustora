@@ -31,6 +31,16 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: Optional[str] = None
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+    role: Optional[str] = None
+
+class LoginResponse(BaseModel):
+    user: UserOut
+    token: str
+    message: str
+
 class UserOut(UserBase):
     id: int
     created_at: Optional[datetime] = None

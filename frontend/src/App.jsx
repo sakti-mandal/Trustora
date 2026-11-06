@@ -8,6 +8,7 @@ import ReviewQueue from './components/ReviewQueue';
 import AuditHistory from './components/AuditHistory';
 import SettingsModal from './components/SettingsModal';
 import GuidelinePdfHub from './components/GuidelinePdfHub';
+import LoginScreen from './components/LoginScreen';
 import {
   fetchHealth,
   fetchCompanies,
@@ -20,8 +21,28 @@ import {
 } from './api';
 
 export default function App() {
-  const [currentRole, setCurrentRole] = useState('Content Creator');
-  const [activeTab, setActiveTab] = useState('creator-dashboard');
+  // Session Authentication State
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('trustora_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  const [currentRole, setCurrentRole] = useState(() => {
+    if (currentUser?.role) return currentUser.role;
+    return 'Content Creator';
+  });
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const role = currentUser?.role || 'Content Creator';
+    if (role === 'Admin') return 'admin-dashboard';
+    if (role === 'Reviewer') return 'reviewer-dashboard';
+    return 'creator-dashboard';
+  });
+
   const [company, setCompany] = useState(null);
   const [systemStatus, setSystemStatus] = useState(null);
   const [rules, setRules] = useState([]);
@@ -113,6 +134,32 @@ export default function App() {
     }
   }, [currentRole, selectedSubmissionId, company, loadComplianceScore]);
 
+  // Handle Login Success
+  const handleLoginSuccess = (user) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('trustora_user', JSON.stringify(user));
+    } catch (e) {}
+
+    const userRole = user.role || 'Content Creator';
+    setCurrentRole(userRole);
+    if (userRole === 'Admin') {
+      setActiveTab('admin-dashboard');
+    } else if (userRole === 'Reviewer') {
+      setActiveTab('reviewer-dashboard');
+    } else {
+      setActiveTab('creator-dashboard');
+    }
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    try {
+      localStorage.removeItem('trustora_user');
+    } catch (e) {}
+    setCurrentUser(null);
+  };
+
   // Handle Reset Demo Data button
   const handleLoadDemo = async () => {
     setIsDemoLoading(true);
@@ -129,6 +176,13 @@ export default function App() {
   // Switch Role helper — immediately opens that persona's dedicated dashboard!
   const handleRoleChange = (newRole) => {
     setCurrentRole(newRole);
+    if (currentUser) {
+      const updated = { ...currentUser, role: newRole };
+      setCurrentUser(updated);
+      try {
+        localStorage.setItem('trustora_user', JSON.stringify(updated));
+      } catch (e) {}
+    }
     if (newRole === 'Admin') {
       setActiveTab('admin-dashboard');
     } else if (newRole === 'Reviewer') {
@@ -137,6 +191,17 @@ export default function App() {
       setActiveTab('creator-dashboard');
     }
   };
+
+  // If user is not logged in, show the Login Portal
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        onLoginSuccess={handleLoginSuccess}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
+    );
+  }
 
   const pendingCount = submissions.filter((s) => s.status === 'Pending Review').length;
 
@@ -157,6 +222,8 @@ export default function App() {
         isMobileSidebarOpen={isMobileSidebarOpen}
         theme={theme}
         onToggleTheme={toggleTheme}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Workspace Layout */}
@@ -203,7 +270,7 @@ export default function App() {
               />
             )}
 
-            {/* 3. REVIEWER DEDICATED DASHBOARD */}
+            {/* 3. REVIEWER / APPROVER DEDICATED DASHBOARD */}
             {activeTab === 'reviewer-dashboard' && (
               <ReviewQueue
                 submissions={submissions}

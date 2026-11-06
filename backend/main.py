@@ -15,6 +15,7 @@ from backend.models import (
 )
 from backend.schemas import (
     CompanyCreate, CompanyUpdate, CompanyOut, UserCreate, UserOut,
+    LoginRequest, LoginResponse,
     BrandGuidelineOut, BrandRuleCreate, BrandRuleUpdate, BrandRuleOut,
     ContentSubmissionCreate, ContentSubmissionUpdate, ContentSubmissionOut,
     AIFindingOut, ReviewDecisionCreate, ReviewDecisionOut, ReviewHistoryOut,
@@ -136,6 +137,53 @@ def register_user(payload: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     return user
+
+
+@app.post("/auth/login", response_model=LoginResponse)
+def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
+    email = payload.email.strip().lower()
+    password = payload.password.strip()
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    if not password:
+        raise HTTPException(status_code=400, detail="Password is required")
+
+    # Map role selection: Admin, Creator, Approval / Approver / Reviewer
+    requested_role = payload.role or "Content Creator"
+    lower_role = requested_role.lower()
+    if "admin" in lower_role:
+        norm_role = "Admin"
+    elif "approv" in lower_role or "review" in lower_role:
+        norm_role = "Reviewer"
+    else:
+        norm_role = "Content Creator"
+
+    # Find user or auto-provision for hackathon convenience
+    user = db.query(User).filter(User.email.ilike(email)).first()
+    if not user:
+        name_part = email.split("@")[0].replace(".", " ").title()
+        user = User(
+            company_id=1,
+            full_name=name_part or f"{norm_role} User",
+            email=email,
+            password_hash=password,
+            role=norm_role
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        if payload.role:
+            user.role = norm_role
+            db.commit()
+            db.refresh(user)
+
+    return {
+        "user": user,
+        "token": f"trustora-auth-session-{user.id}",
+        "message": f"Successfully logged in as {user.role}"
+    }
 
 
 # ---------------- BRAND GUIDELINES ----------------

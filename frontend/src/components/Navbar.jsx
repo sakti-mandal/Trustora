@@ -16,7 +16,8 @@ import {
   Moon,
   PenTool,
   Shield,
-  FileCheck
+  FileCheck,
+  LogOut
 } from 'lucide-react';
 import ScoreMeter from './ScoreMeter';
 import { fetchNotifications, markNotificationRead } from '../api';
@@ -34,7 +35,9 @@ export default function Navbar({
   onToggleMobileSidebar,
   isMobileSidebarOpen,
   theme = 'light',
-  onToggleTheme
+  onToggleTheme,
+  currentUser,
+  onLogout
 }) {
   const [notifications, setNotifications] = useState([]);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
@@ -52,7 +55,7 @@ export default function Navbar({
     try {
       const data = await fetchNotifications(company?.id || 1, currentRole);
       setNotifications(data || []);
-    } catch (e) {}
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -81,7 +84,7 @@ export default function Navbar({
       setNotifications((prev) =>
         prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
       );
-    } catch (e) {}
+    } catch (e) { }
 
     if (notif.submission_id) {
       onSelectSubmission(notif.submission_id);
@@ -98,17 +101,27 @@ export default function Navbar({
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-  const currentPersona =
-    currentRole === 'Admin'
-      ? { name: 'Sarah Chen', email: 'admin@novatech.io', initials: 'SC' }
-      : currentRole === 'Content Creator'
-      ? { name: 'Marcus Rodriguez', email: 'creator@novatech.io', initials: 'MR' }
-      : { name: 'Elena Rostova', email: 'reviewer@novatech.io', initials: 'ER' };
+  const currentPersona = currentUser
+    ? {
+        name: currentUser.full_name || 'Team Member',
+        email: currentUser.email || `${currentRole.toLowerCase().replace(' ', '')}@novatech.io`,
+        initials: (currentUser.full_name || currentRole)
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .substring(0, 2)
+          .toUpperCase()
+      }
+    : currentRole === 'Admin'
+    ? { name: 'Sarah Chen', email: 'admin@novatech.io', initials: 'SC' }
+    : currentRole === 'Content Creator'
+    ? { name: 'Marcus Rodriguez', email: 'creator@novatech.io', initials: 'MR' }
+    : { name: 'Elena Rostova', email: 'reviewer@novatech.io', initials: 'ER' };
 
   return (
     <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-7 py-3 transition-colors duration-200">
       <div className="flex items-center justify-between gap-3 sm:gap-6">
-        
+
         {/* Left: Mobile Toggle & Brand Identity */}
         <div className="flex items-center gap-3 shrink-0">
           {/* Mobile Hamburger Menu Button */}
@@ -157,7 +170,7 @@ export default function Navbar({
 
         {/* Right: Segmented Role Switcher, Dark Mode, Notifications, Avatar */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          
+
           {/* Segmented Role Switcher */}
           <div className="flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
             {roles.map((r) => {
@@ -167,11 +180,10 @@ export default function Navbar({
                 <button
                   key={r.id}
                   onClick={() => onRoleChange(r.id)}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${
-                    active
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${active
                       ? 'bg-indigo-600 text-white shadow-glow-sm'
                       : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
-                  }`}
+                    }`}
                   title={`Switch to ${r.label} Dashboard`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -223,9 +235,8 @@ export default function Navbar({
                       <div
                         key={n.id}
                         onClick={() => handleNotificationClick(n)}
-                        className={`p-3 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition flex items-start gap-2.5 ${
-                          !n.is_read ? 'bg-indigo-50/40 dark:bg-indigo-950/30 font-medium' : ''
-                        }`}
+                        className={`p-3 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition flex items-start gap-2.5 ${!n.is_read ? 'bg-indigo-50/40 dark:bg-indigo-950/30 font-medium' : ''
+                          }`}
                       >
                         <div className="mt-0.5 shrink-0">
                           {n.notification_type === 'review_request' && (
@@ -247,9 +258,9 @@ export default function Navbar({
                           <p className="text-[9px] text-slate-400 dark:text-slate-500">
                             {n.created_at
                               ? new Date(n.created_at).toLocaleTimeString([], {
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
                               : 'Recent'}
                           </p>
                         </div>
@@ -317,6 +328,19 @@ export default function Navbar({
                     <RefreshCw className={`w-3.5 h-3.5 ${isDemoLoading ? 'animate-spin text-indigo-600' : ''}`} />
                     <span>Reset Workspace Data</span>
                   </button>
+
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        if (onLogout) onLogout();
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition font-bold flex items-center gap-2 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out / Switch User</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
