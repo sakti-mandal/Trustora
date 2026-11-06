@@ -13,7 +13,10 @@ import {
   User,
   ChevronDown,
   Sun,
-  Moon
+  Moon,
+  PenTool,
+  Shield,
+  FileCheck
 } from 'lucide-react';
 import ScoreMeter from './ScoreMeter';
 import { fetchNotifications, markNotificationRead } from '../api';
@@ -40,9 +43,9 @@ export default function Navbar({
   const profileRef = useRef(null);
 
   const roles = [
-    { id: 'Admin', label: 'Admin', short: 'Admin' },
-    { id: 'Content Creator', label: 'Creator', short: 'Creator' },
-    { id: 'Reviewer', label: 'Reviewer', short: 'Review' }
+    { id: 'Admin', label: 'Admin', icon: Shield },
+    { id: 'Content Creator', label: 'Creator', icon: PenTool },
+    { id: 'Reviewer', label: 'Reviewer', icon: CheckCircle2 }
   ];
 
   const loadNotifs = async () => {
@@ -103,14 +106,15 @@ export default function Navbar({
       : { name: 'Elena Rostova', email: 'reviewer@novatech.io', initials: 'ER' };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 py-2.5 sm:py-3 transition-colors duration-200">
-      <div className="flex items-center justify-between gap-2 sm:gap-4">
-        {/* Left: Mobile Hamburger & Brand Logo */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+    <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 px-4 sm:px-7 py-3 transition-colors duration-200">
+      <div className="flex items-center justify-between gap-3 sm:gap-6">
+        
+        {/* Left: Mobile Toggle & Brand Identity */}
+        <div className="flex items-center gap-3 shrink-0">
           {/* Mobile Hamburger Menu Button */}
           <button
             onClick={onToggleMobileSidebar}
-            className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-navy-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
+            className="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
             aria-label="Toggle navigation menu"
           >
             {isMobileSidebarOpen ? (
@@ -120,105 +124,107 @@ export default function Navbar({
             )}
           </button>
 
-          {/* Logo */}
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-brand-900 via-brand-700 to-brand-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 shrink-0">
-            <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+          {/* Logo Badge */}
+          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-400 flex items-center justify-center text-white shadow-glow-sm shrink-0">
+            <ShieldCheck className="w-5 h-5 stroke-[2.4]" />
           </div>
 
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="font-black text-lg sm:text-xl tracking-tight text-navy-900 dark:text-white font-sans">
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white font-sans">
                 TRUSTORA
               </span>
-              <span className="hidden xl:inline text-[10px] font-semibold tracking-wider uppercase px-1.5 py-0.2 rounded bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
-                Workspace
+              <span className="hidden sm:inline-flex items-center text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200/80 dark:border-indigo-800/80">
+                Governance
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium hidden md:block leading-none">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium hidden md:block leading-none mt-0.5">
               Trust, Before It Goes Live.
             </span>
           </div>
 
-          {/* Company Badge (Hidden on small mobile) */}
-          <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 ml-2">
-            <Building2 className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
-            <span className="truncate max-w-[120px]">{company?.company_name || 'NOVA TECH'}</span>
+          {/* Company Workspace Pill */}
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs font-semibold text-slate-700 dark:text-slate-200 ml-2">
+            <Building2 className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span className="truncate max-w-[130px]">{company?.company_name || 'NOVA TECH'}</span>
           </div>
         </div>
 
-        {/* Center: Brand Compliance Score Meter (Prominent) */}
+        {/* Center: Brand Compliance Score Meter */}
         <div className="flex items-center justify-center">
           <ScoreMeter scoreData={scoreData} currentRole={currentRole} />
         </div>
 
-        {/* Right: Role Switcher, Dark Mode Toggle, Notifications & Profile Menu */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {/* Right: Segmented Role Switcher, Dark Mode, Notifications, Avatar */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           
-          {/* Role Switcher */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800/90 p-0.5 sm:p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+          {/* Segmented Role Switcher */}
+          <div className="flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
             {roles.map((r) => {
               const active = currentRole === r.id;
+              const Icon = r.icon;
               return (
                 <button
                   key={r.id}
                   onClick={() => onRoleChange(r.id)}
-                  className={`px-2 sm:px-3 py-1 text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${
                     active
-                      ? 'bg-navy-900 dark:bg-brand-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-700/60'
+                      ? 'bg-indigo-600 text-white shadow-glow-sm'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
                   }`}
+                  title={`Switch to ${r.label} Dashboard`}
                 >
+                  <Icon className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">{r.label}</span>
-                  <span className="sm:hidden">{r.short}</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Dark / Light Mode Toggle Button */}
+          {/* Theme Toggle Button */}
           {onToggleTheme && (
             <button
               onClick={onToggleTheme}
-              className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-navy-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+              className="p-2 rounded-2xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 transition active:scale-95 cursor-pointer shadow-2xs"
               title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
                 <Sun className="w-4 h-4 text-amber-400" />
               ) : (
-                <Moon className="w-4 h-4 text-slate-700" />
+                <Moon className="w-4 h-4 text-slate-600" />
               )}
             </button>
           )}
 
-          {/* Notifications Bell Dropdown */}
+          {/* Notifications Dropdown */}
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="relative p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:text-navy-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+              className="relative p-2 rounded-2xl text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800 transition active:scale-95 cursor-pointer shadow-2xs"
               title="Notifications"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+                <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 animate-pulse" />
               )}
             </button>
 
             {isNotifOpen && (
-              <div className="absolute right-0 mt-2 w-76 sm:w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-4 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-xs font-bold text-navy-900 dark:text-white">Notifications ({notifications.length})</span>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{currentRole}</span>
+              <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-4 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications ({notifications.length})</span>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase">{currentRole}</span>
                 </div>
 
-                <div className="max-h-72 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800">
+                <div className="max-h-72 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-800/60">
                   {notifications.length > 0 ? (
                     notifications.map((n) => (
                       <div
                         key={n.id}
                         onClick={() => handleNotificationClick(n)}
                         className={`p-3 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition flex items-start gap-2.5 ${
-                          !n.is_read ? 'bg-brand-50/40 dark:bg-brand-950/30 font-medium' : ''
+                          !n.is_read ? 'bg-indigo-50/40 dark:bg-indigo-950/30 font-medium' : ''
                         }`}
                       >
                         <div className="mt-0.5 shrink-0">
@@ -250,7 +256,7 @@ export default function Navbar({
                       </div>
                     ))
                   ) : (
-                    <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                    <div className="p-5 text-center text-xs text-slate-400 dark:text-slate-500">
                       No notifications for {currentRole}
                     </div>
                   )}
@@ -259,25 +265,25 @@ export default function Navbar({
             )}
           </div>
 
-          {/* User Profile Menu Dropdown */}
+          {/* Profile Menu Dropdown */}
           <div className="relative" ref={profileRef}>
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95"
+              className="flex items-center gap-1.5 p-1 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition active:scale-95 cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand-600 to-navy-900 text-white flex items-center justify-center text-xs font-bold shadow-inner">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-xs font-black shadow-glow-sm">
                 {currentPersona.initials}
               </div>
               <ChevronDown className="w-3 h-3 text-slate-400 hidden sm:block" />
             </button>
 
             {isProfileOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-xs">
-                <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 mb-2">
-                  <p className="font-bold text-slate-900 dark:text-white">{currentPersona.name}</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{currentPersona.email}</p>
-                  <span className="mt-1.5 inline-block text-[10px] font-semibold px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700">
-                    Role: {currentRole}
+              <div className="absolute right-0 mt-3 w-60 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150 text-xs">
+                <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 mb-2">
+                  <p className="font-extrabold text-slate-900 dark:text-white text-sm">{currentPersona.name}</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate">{currentPersona.email}</p>
+                  <span className="mt-2 inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                    Active: {currentRole}
                   </span>
                 </div>
 
@@ -287,7 +293,7 @@ export default function Navbar({
                       setIsProfileOpen(false);
                       onNavigate('guidelines-hub');
                     }}
-                    className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-medium"
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-semibold"
                   >
                     Suggestion & Guideline PDF Hub
                   </button>
@@ -296,9 +302,9 @@ export default function Navbar({
                       setIsProfileOpen(false);
                       onNavigate('settings');
                     }}
-                    className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-medium"
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-semibold"
                   >
-                    System Settings
+                    System Architecture & Settings
                   </button>
                   <button
                     onClick={() => {
@@ -306,9 +312,9 @@ export default function Navbar({
                       onLoadDemo();
                     }}
                     disabled={isDemoLoading}
-                    className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-medium flex items-center gap-1.5"
+                    className="w-full text-left px-3 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition font-semibold flex items-center gap-2"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isDemoLoading ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${isDemoLoading ? 'animate-spin text-indigo-600' : ''}`} />
                     <span>Reset Workspace Data</span>
                   </button>
                 </div>

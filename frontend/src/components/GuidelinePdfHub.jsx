@@ -12,7 +12,9 @@ import {
   Download,
   X,
   PlusCircle,
-  HelpCircle
+  HelpCircle,
+  FileUp,
+  FolderOpen
 } from 'lucide-react';
 import { fetchGuidelines, uploadGuidelineFile, deleteGuideline, createBrandRule } from '../api';
 
@@ -68,7 +70,6 @@ export default function GuidelinePdfHub({
       const res = await uploadGuidelineFile(file, companyId);
       await loadData();
       setSelectedDoc(res);
-      // Auto-extract candidate suggestions
       extractRulesFromText(res.extracted_text, res.document_name);
     } catch (err) {
       setUploadError(err.message || 'Upload failed. Please try again.');
@@ -92,7 +93,6 @@ export default function GuidelinePdfHub({
     }
   };
 
-  // Extract candidate suggestions / rules from text
   const extractRulesFromText = (text, docName) => {
     if (!text) return;
     setIsExtracting(true);
@@ -100,9 +100,8 @@ export default function GuidelinePdfHub({
 
     const lines = text.split('\n').map((l) => l.trim()).filter((l) => l.length > 15);
 
-    // Look for tone, prohibited, facts, requirements patterns
     lines.forEach((line, idx) => {
-      const lower = line.lower ? line.lower() : line.toLowerCase();
+      const lower = line.toLowerCase();
       if (
         lower.includes('tone') ||
         lower.includes('voice') ||
@@ -150,7 +149,6 @@ export default function GuidelinePdfHub({
       }
     });
 
-    // Pick top unique candidates
     const unique = candidates.slice(0, 6);
     setSuggestedRules(unique);
     setIsExtracting(false);
@@ -175,18 +173,18 @@ export default function GuidelinePdfHub({
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl p-6 sm:p-7 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-black text-navy-900 dark:text-white tracking-tight">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
               Suggestion & Guideline PDF Hub
             </h1>
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200/80 dark:border-cyan-800/80">
               Universal Access
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Upload company brand guidelines, suggestion briefs, campaign reference PDFs, or style manuals. TRUSTORA extracts document text, division chunks, and candidate brand rules for automatic governance.
+            Upload company brand guidelines, suggestion briefs, campaign references, or style manuals in PDF, DOCX, or TXT. TRUSTORA extracts text and candidate brand rules for automatic governance auditing.
           </p>
         </div>
 
@@ -202,7 +200,7 @@ export default function GuidelinePdfHub({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs shadow-md shadow-brand-500/20 active:scale-95 transition cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-extrabold text-xs shadow-glow-sm hover:shadow-glow-md active:scale-95 transition cursor-pointer disabled:opacity-50"
           >
             <Upload className={`w-4 h-4 ${isUploading ? 'animate-bounce' : ''}`} />
             <span>{isUploading ? 'Extracting PDF Text...' : 'Upload Suggestion / Guideline PDF'}</span>
@@ -211,7 +209,7 @@ export default function GuidelinePdfHub({
       </div>
 
       {uploadError && (
-        <div className="p-3.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+        <div className="p-4 bg-rose-50/90 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-2xl text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2.5 shadow-2xs">
           <AlertCircle className="w-4 h-4 shrink-0 text-rose-600 dark:text-rose-400" />
           <span>{uploadError}</span>
         </div>
@@ -222,22 +220,24 @@ export default function GuidelinePdfHub({
         
         {/* Left Column: Uploaded Documents List */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h2 className="text-sm font-bold text-navy-900 dark:text-white flex items-center gap-2">
-                <FileCheck className="w-4 h-4 text-brand-600 dark:text-brand-400" />
+          <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-sm space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3.5">
+              <h2 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <span>Uploaded Documents ({guidelines.length})</span>
               </h2>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500">PDF, DOCX, TXT</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase">PDF, DOCX, TXT</span>
             </div>
 
             {/* Drag & Drop Quick Dropzone */}
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-brand-500 dark:hover:border-brand-400 rounded-xl p-4 text-center cursor-pointer transition-colors bg-slate-50/50 dark:bg-slate-800/40 group"
+              className="border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 rounded-2xl p-5 text-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-800/40 group shadow-2xs"
             >
-              <Upload className="w-6 h-6 mx-auto text-slate-400 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition mb-1" />
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+              <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition-transform">
+                <FileUp className="w-5 h-5" />
+              </div>
+              <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
                 Click or Drop PDF here to upload
               </p>
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
@@ -246,7 +246,7 @@ export default function GuidelinePdfHub({
             </div>
 
             {/* List */}
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2.5 max-h-96 overflow-y-auto pr-1">
               {guidelines.length > 0 ? (
                 guidelines.map((doc) => {
                   const isSelected = selectedDoc?.id === doc.id;
@@ -257,21 +257,21 @@ export default function GuidelinePdfHub({
                         setSelectedDoc(doc);
                         extractRulesFromText(doc.extracted_text, doc.document_name);
                       }}
-                      className={`p-3 rounded-xl border text-xs cursor-pointer transition flex items-center justify-between gap-3 ${
+                      className={`p-3.5 rounded-2xl border text-xs cursor-pointer transition flex items-center justify-between gap-3 ${
                         isSelected
-                          ? 'bg-brand-50/70 dark:bg-brand-950/40 border-brand-300 dark:border-brand-800 shadow-2xs'
+                          ? 'bg-indigo-50/80 dark:bg-indigo-950/50 border-indigo-300 dark:border-indigo-800 shadow-glow-sm'
                           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                       }`}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-8 h-8 rounded-lg bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 flex items-center justify-center shrink-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0">
                           <FileText className="w-4 h-4" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-800 dark:text-slate-100 truncate">
+                          <p className="font-extrabold text-slate-800 dark:text-slate-100 truncate">
                             {doc.document_name}
                           </p>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5 mt-0.5">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5 mt-0.5 font-medium">
                             <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             <span>Indexed ({doc.extracted_text ? Math.round(doc.extracted_text.length / 100) : 0} chunks)</span>
                           </p>
@@ -284,27 +284,27 @@ export default function GuidelinePdfHub({
                             e.stopPropagation();
                             setPreviewText(doc.extracted_text);
                           }}
-                          className="p-1.5 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                          className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                           title="View extracted text"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(doc.id);
                           }}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                          className="p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
                           title="Delete document"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                   );
                 })
               ) : (
-                <div className="p-6 text-center text-xs text-slate-400 dark:text-slate-500">
+                <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500">
                   No guideline documents uploaded yet.
                 </div>
               )}
@@ -317,28 +317,28 @@ export default function GuidelinePdfHub({
           {selectedDoc ? (
             <div className="space-y-4">
               {/* Document Overview Card */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                       Active Guideline Document
                     </span>
-                    <h3 className="text-base font-extrabold text-navy-900 dark:text-white">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white">
                       {selectedDoc.document_name}
                     </h3>
                   </div>
 
                   <button
                     onClick={() => setPreviewText(selectedDoc.extracted_text)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-semibold text-xs transition"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
-                    <span>View Extracted Content</span>
+                    <span>View Extracted Text</span>
                   </button>
                 </div>
 
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-xs text-slate-600 dark:text-slate-300 space-y-1">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                  <p className="font-bold text-slate-800 dark:text-slate-200">
                     Governance Status: Fully Ingested & Active
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -348,33 +348,33 @@ export default function GuidelinePdfHub({
               </div>
 
               {/* AI Extracted Rule Suggestions from PDF */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                   <div className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-                    <h3 className="text-sm font-bold text-navy-900 dark:text-white">
+                    <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">
                       Candidate Rules Extracted from this PDF
                     </h3>
                   </div>
-                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                     One-click add to system
                   </span>
                 </div>
 
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {suggestedRules.length > 0 ? (
                     suggestedRules.map((item) => {
                       const isAdopted = adoptedRuleIds.has(item.id);
                       return (
                         <div
                           key={item.id}
-                          className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700/60 flex items-start justify-between gap-3 text-xs"
+                          className="p-4 bg-slate-50/80 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/60 flex items-start justify-between gap-3 text-xs"
                         >
-                          <div className="space-y-1 min-w-0">
-                            <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700">
+                          <div className="space-y-1.5 min-w-0">
+                            <span className="inline-block text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700">
                               {item.label}
                             </span>
-                            <p className="text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
+                            <p className="text-slate-800 dark:text-slate-200 font-medium leading-relaxed">
                               "{item.text}"
                             </p>
                           </div>
@@ -382,10 +382,10 @@ export default function GuidelinePdfHub({
                           <button
                             onClick={() => handleAdoptRule(item)}
                             disabled={isAdopted}
-                            className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 ${
+                            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer ${
                               isAdopted
                                 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
-                                : 'bg-brand-600 hover:bg-brand-700 text-white cursor-pointer'
+                                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-glow-sm'
                             }`}
                           >
                             {isAdopted ? (
@@ -404,7 +404,7 @@ export default function GuidelinePdfHub({
                       );
                     })
                   ) : (
-                    <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                    <div className="p-6 text-center text-xs text-slate-400 dark:text-slate-500">
                       {isExtracting
                         ? 'Extracting candidate rules from document...'
                         : 'No candidate rules extracted yet. Select a document above to inspect.'}
@@ -414,8 +414,8 @@ export default function GuidelinePdfHub({
               </div>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-12 text-center text-slate-400 dark:text-slate-500 text-xs">
-              <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 p-14 text-center text-slate-400 dark:text-slate-500 text-xs">
+              <FileText className="w-8 h-8 mx-auto mb-2 opacity-50 text-indigo-400" />
               Upload or select a suggestion/guideline PDF to view extracted content and rules.
             </div>
           )}
@@ -425,29 +425,29 @@ export default function GuidelinePdfHub({
 
       {/* Extracted Text Modal */}
       {previewText && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-3xl w-full p-6 shadow-2xl flex flex-col max-h-[85vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-navy-900 dark:text-white flex items-center gap-2">
-                <FileText className="w-4 h-4 text-brand-600" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 max-w-3xl w-full p-6 sm:p-7 shadow-2xl flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <FileText className="w-4 h-4 text-indigo-600" />
                 <span>Extracted Document Text</span>
               </h3>
               <button
                 onClick={() => setPreviewText(null)}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-950 font-mono text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed border border-slate-200 dark:border-slate-800">
+            <div className="flex-1 overflow-y-auto mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 font-mono text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed border border-slate-200 dark:border-slate-800">
               {previewText}
             </div>
 
             <div className="pt-4 flex justify-end">
               <button
                 onClick={() => setPreviewText(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold transition"
+                className="px-5 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
               >
                 Close Preview
               </button>

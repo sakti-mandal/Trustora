@@ -7,8 +7,11 @@ import {
   AlertTriangle,
   HelpCircle,
   RefreshCw,
+  Sparkles,
   TrendingUp,
-  FileCheck2
+  FileCheck2,
+  Activity,
+  Layers
 } from 'lucide-react';
 
 export default function ComplianceScoreCard({
@@ -27,11 +30,12 @@ export default function ComplianceScoreCard({
     if (val === null || val === undefined) {
       return {
         ring: '#94a3b8',
+        gradientStart: '#94a3b8',
+        gradientEnd: '#64748b',
         text: 'text-slate-500 dark:text-slate-400',
-        bg: 'bg-slate-50 dark:bg-slate-800/60',
-        border: 'border-slate-200 dark:border-slate-700',
-        badge: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600',
-        progressBg: 'bg-slate-400 dark:bg-slate-600',
+        bgPill: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
+        dot: 'bg-slate-400',
+        progressBar: 'bg-slate-300 dark:bg-slate-700',
         label: 'Not Analysed',
         icon: HelpCircle
       };
@@ -39,44 +43,48 @@ export default function ComplianceScoreCard({
     if (val >= 90) {
       return {
         ring: '#10b981',
-        text: 'text-emerald-700 dark:text-emerald-400',
-        bg: 'bg-emerald-50/70 dark:bg-emerald-950/30',
-        border: 'border-emerald-200 dark:border-emerald-800/60',
-        badge: 'bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700',
-        progressBg: 'bg-emerald-500',
+        gradientStart: '#10b981',
+        gradientEnd: '#14b8a6',
+        text: 'text-emerald-600 dark:text-emerald-400',
+        bgPill: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 shadow-glow-emerald/30',
+        dot: 'bg-emerald-500',
+        progressBar: 'bg-gradient-to-r from-emerald-500 to-teal-400',
         label: 'Fully Compliant',
         icon: CheckCircle2
       };
     } else if (val >= 75) {
       return {
-        ring: '#2563eb',
-        text: 'text-blue-700 dark:text-blue-400',
-        bg: 'bg-blue-50/70 dark:bg-blue-950/30',
-        border: 'border-blue-200 dark:border-blue-800/60',
-        badge: 'bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700',
-        progressBg: 'bg-blue-600',
+        ring: '#6366f1',
+        gradientStart: '#6366f1',
+        gradientEnd: '#3b82f6',
+        text: 'text-indigo-600 dark:text-indigo-400',
+        bgPill: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 shadow-glow-sm',
+        dot: 'bg-indigo-500',
+        progressBar: 'bg-gradient-to-r from-indigo-500 to-blue-500',
         label: 'Minor Revisions',
         icon: TrendingUp
       };
     } else if (val >= 50) {
       return {
         ring: '#f59e0b',
-        text: 'text-amber-700 dark:text-amber-400',
-        bg: 'bg-amber-50/70 dark:bg-amber-950/30',
-        border: 'border-amber-200 dark:border-amber-800/60',
-        badge: 'bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700',
-        progressBg: 'bg-amber-500',
+        gradientStart: '#f59e0b',
+        gradientEnd: '#fbbf24',
+        text: 'text-amber-600 dark:text-amber-400',
+        bgPill: 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800 shadow-glow-amber/30',
+        dot: 'bg-amber-500',
+        progressBar: 'bg-gradient-to-r from-amber-500 to-yellow-400',
         label: 'Needs Attention',
         icon: AlertTriangle
       };
     } else {
       return {
-        ring: '#ef4444',
-        text: 'text-rose-700 dark:text-rose-400',
-        bg: 'bg-rose-50/70 dark:bg-rose-950/30',
-        border: 'border-rose-200 dark:border-rose-800/60',
-        badge: 'bg-rose-50 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700',
-        progressBg: 'bg-rose-500',
+        ring: '#f43f5e',
+        gradientStart: '#f43f5e',
+        gradientEnd: '#fb7185',
+        text: 'text-rose-600 dark:text-rose-400',
+        bgPill: 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800 shadow-glow-rose/30',
+        dot: 'bg-rose-500',
+        progressBar: 'bg-gradient-to-r from-rose-500 to-pink-500',
         label: 'Critical Violations',
         icon: AlertCircle
       };
@@ -86,8 +94,8 @@ export default function ComplianceScoreCard({
   const scheme = getColorScheme(score);
   const StatusIcon = scheme.icon;
 
-  // SVG Circular progress math
-  const radius = 38;
+  // SVG Circular progress gauge math
+  const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = hasScore ? circumference - (score / 100) * circumference : circumference;
 
@@ -101,32 +109,42 @@ export default function ComplianceScoreCard({
 
   return (
     <div
-      className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm transition-all ${className}`}
+      className={`relative overflow-hidden rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-6 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-md ${className}`}
     >
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+      {/* Decorative ambient gradient backdrop */}
+      <div className="absolute top-0 right-0 -mr-24 -mt-24 w-72 h-72 rounded-full bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 -ml-24 -mb-24 w-72 h-72 rounded-full bg-gradient-to-tr from-blue-500/10 via-teal-500/5 to-transparent blur-3xl pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-7">
         
-        {/* Left: Prominent Circular Dial & Primary Metrics */}
-        <div className="flex items-center gap-5 sm:gap-6 shrink-0 w-full sm:w-auto">
-          {/* Circular Meter Gauge */}
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center shrink-0">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 96 96">
-              {/* Background track */}
+        {/* Left Column: Dial & Primary Metrics */}
+        <div className="flex items-center gap-6 shrink-0 w-full lg:w-auto">
+          {/* Circular Speedometer Gauge with SVG gradient */}
+          <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center shrink-0">
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 104 104">
+              <defs>
+                <linearGradient id="scoreGaugeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor={scheme.gradientStart} />
+                  <stop offset="100%" stopColor={scheme.gradientEnd} />
+                </linearGradient>
+              </defs>
+              {/* Background Track */}
               <circle
-                cx="48"
-                cy="48"
+                cx="52"
+                cy="52"
                 r={radius}
-                className="text-slate-100 dark:text-slate-800 stroke-current"
-                strokeWidth="7"
+                className="text-slate-100 dark:text-slate-800/80 stroke-current"
+                strokeWidth="8"
                 fill="transparent"
               />
-              {/* Dynamic progress ring */}
+              {/* Dynamic Animated Stroke */}
               {hasScore && (
                 <circle
-                  cx="48"
-                  cy="48"
+                  cx="52"
+                  cy="52"
                   r={radius}
-                  stroke={scheme.ring}
-                  strokeWidth="7"
+                  stroke="url(#scoreGaugeGrad)"
+                  strokeWidth="8"
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
@@ -135,51 +153,62 @@ export default function ComplianceScoreCard({
                 />
               )}
             </svg>
+
+            {/* Centered Score Readout */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className={`text-2xl sm:text-3xl font-black tracking-tight ${scheme.text}`}>
+              <span className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${scheme.text}`}>
                 {hasScore ? score : '—'}
               </span>
-              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
                 {hasScore ? '/ 100' : 'UNRATED'}
               </span>
             </div>
           </div>
 
-          {/* Heading, Role Context & Status Badge */}
-          <div className="space-y-1.5 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base sm:text-lg font-extrabold text-navy-900 dark:text-white tracking-tight">
-                Brand Compliance Score
-              </h2>
+          {/* Context Details & Status Pill */}
+          <div className="space-y-2 flex-1">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${scheme.dot}`} />
+                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${scheme.dot}`} />
+                </span>
+                <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
+                  Brand Compliance
+                </h2>
+              </div>
+
               <span
-                className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border shadow-2xs ${scheme.badge}`}
+                className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border transition-all ${scheme.bgPill}`}
               >
                 <StatusIcon className="w-3.5 h-3.5" />
                 <span>{scheme.label}</span>
               </span>
             </div>
 
-            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <p className="text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 leading-snug">
               {currentRole === 'Admin'
-                ? `Company Average across audited submissions`
+                ? `Company-wide compliance index calculated across all saved campaign records.`
                 : currentRole === 'Reviewer'
-                ? `Active Review Target: ${scoreData?.submission_title || 'Pending Submission'}`
-                : `Target Submission: ${scoreData?.submission_title || 'Current Draft'}`}
+                ? `Review Target: ${scoreData?.submission_title || 'Active Submission'}`
+                : `Draft Target: ${scoreData?.submission_title || 'Current Draft Copy'}`}
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400 dark:text-slate-500 pt-0.5">
+            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 dark:text-slate-500 pt-1">
               <span className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" />
+                <Calendar className="w-3.5 h-3.5 text-slate-400" />
                 <span>
                   Last Audited:{' '}
-                  {scoreData?.last_analyzed
-                    ? new Date(scoreData.last_analyzed).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })
-                    : 'Not yet audited'}
+                  <strong className="text-slate-600 dark:text-slate-300 font-semibold">
+                    {scoreData?.last_analyzed
+                      ? new Date(scoreData.last_analyzed).toLocaleString([], {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      : 'Not yet audited'}
+                  </strong>
                 </span>
               </span>
 
@@ -187,41 +216,44 @@ export default function ComplianceScoreCard({
                 <button
                   onClick={onRefresh}
                   disabled={isRefreshing}
-                  className="inline-flex items-center gap-1 text-brand-600 dark:text-brand-400 hover:underline font-semibold cursor-pointer active:scale-95 transition"
+                  className="inline-flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-bold cursor-pointer active:scale-95 transition"
                 >
-                  <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  <span>Refresh Score</span>
+                  <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span>Refresh Audit</span>
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        {/* Right: Detailed Category Score Progress Bars */}
-        <div className="w-full lg:w-7/12 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800 pt-4 lg:pt-0 lg:pl-6 space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-            <span>Category Breakdown</span>
-            <span>Compliance %</span>
+        {/* Right Column: Category Breakdown Meters */}
+        <div className="w-full lg:w-7/12 border-t lg:border-t-0 lg:border-l border-slate-100 dark:border-slate-800/80 pt-5 lg:pt-0 lg:pl-8 space-y-3">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <span className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-indigo-500" />
+              <span>Category Compliance Breakdown</span>
+            </span>
+            <span>Score %</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
             {categories.map((cat) => {
               const catScore = hasScore ? (scoreData?.category_scores?.[cat.key] ?? 100) : 0;
               const catScheme = getColorScheme(hasScore ? catScore : null);
               return (
-                <div key={cat.key} className="space-y-1">
+                <div key={cat.key} className="space-y-1.5 group">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300 text-[11px]">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                       {cat.label}
                     </span>
-                    <span className={`font-bold text-[11px] ${hasScore ? catScheme.text : 'text-slate-400'}`}>
+                    <span className={`font-bold font-mono ${hasScore ? catScheme.text : 'text-slate-400'}`}>
                       {hasScore ? `${catScore}%` : '—'}
                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-0.5">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ${
-                        hasScore ? catScheme.progressBg : 'bg-slate-300 dark:bg-slate-700'
+                        hasScore ? catScheme.progressBar : 'bg-slate-300 dark:bg-slate-700'
                       }`}
                       style={{ width: `${hasScore ? catScore : 0}%` }}
                     />

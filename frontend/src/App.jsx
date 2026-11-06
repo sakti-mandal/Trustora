@@ -141,7 +141,7 @@ export default function App() {
   const pendingCount = submissions.filter((s) => s.status === 'Pending Review').length;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-brand-600 selection:text-white w-full overflow-x-hidden transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans selection:bg-indigo-600 selection:text-white w-full overflow-x-hidden transition-colors duration-200">
       {/* Top SaaS Navbar with Interactive Score Meter & Theme Switch */}
       <Navbar
         currentRole={currentRole}
@@ -174,7 +174,7 @@ export default function App() {
         />
 
         {/* Content Viewport */}
-        <main className="flex-1 min-w-0 w-full overflow-y-auto p-3.5 sm:p-6 md:p-8 bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+        <main className="flex-1 min-w-0 w-full overflow-y-auto p-4 sm:p-7 md:p-8 bg-slate-50/60 dark:bg-slate-950/60 bg-grid-pattern transition-colors duration-200">
           <div className="max-w-7xl mx-auto w-full min-w-0 space-y-6">
             
             {/* 1. ADMIN DEDICATED DASHBOARD */}
