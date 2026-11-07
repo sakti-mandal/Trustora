@@ -2,6 +2,7 @@ import os
 import shutil
 from typing import List, Optional
 from datetime import datetime, timezone
+from urllib.parse import parse_qs, unquote
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -46,10 +47,71 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Raw ASGI Middleware for Vercel Serverless Function path restoration
+class VercelPathFixMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http":
+            query_string = scope.get("query_string", b"").decode("utf-8", "ignore")
+            params = parse_qs(query_string)
+            route_param = params.get("__route__", [None])[0] or params.get("path", [None])[0]
+
+            headers = dict(scope.get("headers", []))
+            x_matched = headers.get(b"x-matched-path", b"").decode("utf-8", "ignore")
+            x_forwarded = headers.get(b"x-forwarded-uri", b"").decode("utf-8", "ignore")
+            x_rewrite = headers.get(b"x-rewrite-url", b"").decode("utf-8", "ignore")
+
+            resolved = None
+            if route_param:
+                resolved = unquote(route_param)
+            elif x_matched and not x_matched.startswith("/api/index.py") and x_matched != "/api":
+                resolved = x_matched
+            elif x_forwarded and not x_forwarded.startswith("/api/index.py") and x_forwarded != "/api":
+                resolved = x_forwarded
+            elif x_rewrite and not x_rewrite.startswith("/api/index.py") and x_rewrite != "/api":
+                resolved = x_rewrite
+
+            if resolved:
+                if "?" in resolved:
+                    resolved = resolved.split("?")[0]
+                if not resolved.startswith("/"):
+                    resolved = "/" + resolved
+                scope["path"] = resolved
+
+            cur_path = scope.get("path", "")
+            if cur_path.startswith("/api/") and not cur_path.startswith("/api/docs") and not cur_path.startswith("/api/openapi.json"):
+                scope["path"] = cur_path[4:]
+
+        await self.app(scope, receive, send)
+
+app.add_middleware(VercelPathFixMiddleware)
+
 # Support both /api/path and /path interchangeably (crucial for Vercel & proxy environments)
 @app.middleware("http")
 async def api_prefix_middleware(request: Request, call_next):
-    path = request.url.path
+    # Check query param __route__ or headers if scope was not adjusted
+    route_param = request.query_params.get("__route__") or request.query_params.get("path")
+    x_matched = request.headers.get("x-matched-path", "")
+    x_forwarded = request.headers.get("x-forwarded-uri", "")
+
+    target_path = None
+    if route_param:
+        target_path = unquote(route_param)
+    elif x_matched and not x_matched.startswith("/api/index.py") and x_matched != "/api":
+        target_path = x_matched
+    elif x_forwarded and not x_forwarded.startswith("/api/index.py") and x_forwarded != "/api":
+        target_path = x_forwarded
+
+    if target_path:
+        if "?" in target_path:
+            target_path = target_path.split("?")[0]
+        if not target_path.startswith("/"):
+            target_path = "/" + target_path
+        request.scope["path"] = target_path
+
+    path = request.scope.get("path", request.url.path)
     if path.startswith("/api/") and not path.startswith("/api/docs") and not path.startswith("/api/openapi.json"):
         request.scope["path"] = path[4:]
     return await call_next(request)
@@ -342,6 +404,30 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
         ),
         "token": f"trustora-auth-session-{user.id}",
         "message": f"Successfully logged in as {user.role}"
+    }
+
+
+# Fallback handler for requests arriving directly at /api or /api/index.py (e.g. from serverless rewrites)
+@app.api_route("/api", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+@app.api_route("/api/index.py", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
+async def root_api_handler(request: Request, db: Session = Depends(get_db)):
+    if request.method == "POST":
+        try:
+            body = await request.json()
+            if isinstance(body, dict) and "email" in body and "password" in body:
+                login_req = LoginRequest(
+                    email=body.get("email"),
+                    password=body.get("password"),
+                    role=body.get("role")
+                )
+                return login_user(login_req, db=db)
+        except Exception:
+            pass
+    return {
+        "status": "healthy",
+        "app": "TRUSTORA Brand Governance Platform",
+        "version": "1.0.0",
+        "message": "API endpoint active"
     }
 
 
@@ -1108,13 +1194,15 @@ FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 if FRONTEND_DIST.exists():
     app.mount("/assets", StaticFiles(directory=str(FRONTEND_DIST / "assets")), name="assets")
 
-    @app.get("/{full_path:path}")
-    def serve_spa(full_path: str):
-        # Don't hijack API routes or docs
-        if full_path in ["docs", "redoc", "openapi.json"] or full_path.startswith("api"):
-            raise HTTPException(status_code=404, detail="Not found")
-        index_file = FRONTEND_DIST / "index.html"
-        if index_file.exists():
-            return FileResponse(str(index_file))
-        raise HTTPException(status_code=404, detail="Frontend build index.html not found")
+    @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"])
+    def serve_spa(request: Request, full_path: str):
+        if request.method == "GET":
+            # Don't hijack API routes or docs
+            if full_path in ["docs", "redoc", "openapi.json"] or full_path.startswith("api"):
+                raise HTTPException(status_code=404, detail="Not found")
+            index_file = FRONTEND_DIST / "index.html"
+            if index_file.exists():
+                return FileResponse(str(index_file))
+            raise HTTPException(status_code=404, detail="Frontend build index.html not found")
+        raise HTTPException(status_code=404, detail=f"API route '/{full_path}' not found")
 

@@ -4,51 +4,51 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/api/$1"
     },
     {
       "source": "/auth/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/auth/$1"
     },
     {
       "source": "/compliance/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/compliance/$1"
     },
     {
       "source": "/content/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/content/$1"
     },
     {
       "source": "/companies/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/companies/$1"
     },
     {
       "source": "/guidelines/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/guidelines/$1"
     },
     {
       "source": "/brand-rules/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/brand-rules/$1"
     },
     {
       "source": "/dashboard/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/dashboard/$1"
     },
     {
       "source": "/notifications/(.*)",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/notifications/$1"
     },
     {
       "source": "/health",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/health"
     },
     {
       "source": "/docs",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/docs"
     },
     {
       "source": "/openapi.json",
-      "destination": "/api"
+      "destination": "/api/index.py?__route__=/openapi.json"
     },
     {
       "source": "/assets/(.*)",
