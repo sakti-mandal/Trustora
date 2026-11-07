@@ -147,9 +147,7 @@ export default function ContentCreator({
       });
       await submitForReview(selectedSubmissionId);
       await onRefresh(selectedSubmissionId);
-      alert('Submission forwarded to the Reviewer! Switching to Reviewer Dashboard.');
-      onRoleChange('Reviewer');
-      onNavigate('reviewer-dashboard');
+      alert('Content successfully submitted for review! It is now pending approval in the Human Review Gate.');
     } catch (err) {
       alert('Failed to submit for review');
     } finally {

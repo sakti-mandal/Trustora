@@ -11,7 +11,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-export default function AuditHistory({ submissions, onSelectSubmission, onNavigate }) {
+export default function AuditHistory({ submissions, onSelectSubmission, onNavigate, currentRole }) {
   const [selectedSubId, setSelectedSubId] = useState('all');
 
   const allSubmissions = submissions || [];
@@ -140,16 +140,22 @@ export default function AuditHistory({ submissions, onSelectSubmission, onNaviga
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      onSelectSubmission(evt.submission_id);
-                      onNavigate('creator-dashboard');
-                    }}
-                    className="shrink-0 text-brand-600 dark:text-brand-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>View Submission</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
+                  {(currentRole === 'Reviewer' || currentRole === 'Content Creator') && (
+                    <button
+                      onClick={() => {
+                        onSelectSubmission(evt.submission_id);
+                        if (currentRole === 'Reviewer') {
+                          onNavigate('reviewer-dashboard');
+                        } else {
+                          onNavigate('creator-dashboard');
+                        }
+                      }}
+                      className="shrink-0 text-brand-600 dark:text-brand-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>View Submission</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

@@ -16,7 +16,7 @@ export default function OverviewDashboard({
   stats,
   onNavigate,
   onSelectSubmission,
-  onRoleChange
+  currentRole
 }) {
   const statCards = [
     {
@@ -175,12 +175,12 @@ export default function OverviewDashboard({
                         <button
                           onClick={() => {
                             onSelectSubmission(sub.id);
-                            if (sub.status === 'Pending Review') {
-                              onRoleChange('Reviewer');
+                            if (currentRole === 'Reviewer') {
                               onNavigate('reviewer-dashboard');
-                            } else {
-                              onRoleChange('Content Creator');
+                            } else if (currentRole === 'Content Creator') {
                               onNavigate('creator-dashboard');
+                            } else {
+                              onNavigate('history');
                             }
                           }}
                           className="text-brand-600 dark:text-brand-400 font-bold hover:underline cursor-pointer"

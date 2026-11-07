@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { ShieldAlert } from 'lucide-react';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import OverviewDashboard from './components/OverviewDashboard';
@@ -22,6 +23,19 @@ import {
   fetchUsers
 } from './api';
 
+// Strict Role-Based Dashboard Access Permissions
+const ROLE_ALLOWED_TABS = {
+  'Admin': ['admin-dashboard', 'team-domain', 'guidelines-hub', 'history', 'overview', 'settings'],
+  'Reviewer': ['reviewer-dashboard', 'guidelines-hub', 'history', 'overview', 'settings'],
+  'Content Creator': ['creator-dashboard', 'guidelines-hub', 'history', 'overview', 'settings']
+};
+
+const getDefaultDashboard = (role) => {
+  if (role === 'Admin') return 'admin-dashboard';
+  if (role === 'Reviewer') return 'reviewer-dashboard';
+  return 'creator-dashboard';
+};
+
 export default function App() {
   // Session Authentication State
   const [currentUser, setCurrentUser] = useState(() => {
@@ -40,9 +54,7 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState(() => {
     const role = currentUser?.role || 'Content Creator';
-    if (role === 'Admin') return 'admin-dashboard';
-    if (role === 'Reviewer') return 'reviewer-dashboard';
-    return 'creator-dashboard';
+    return getDefaultDashboard(role);
   });
 
   const [company, setCompany] = useState(null);
@@ -139,7 +151,7 @@ export default function App() {
     }
   }, [currentRole, selectedSubmissionId, company, loadComplianceScore]);
 
-  // Handle Login Success
+  // Handle Login Success — activates the session and locks to that role's dedicated dashboard
   const handleLoginSuccess = (user) => {
     setCurrentUser(user);
     try {
@@ -148,14 +160,29 @@ export default function App() {
 
     const userRole = user.role || 'Content Creator';
     setCurrentRole(userRole);
-    if (userRole === 'Admin') {
-      setActiveTab('admin-dashboard');
-    } else if (userRole === 'Reviewer') {
-      setActiveTab('reviewer-dashboard');
+    setActiveTab(getDefaultDashboard(userRole));
+  };
+
+  // Safe tab change guard: users can only navigate to tabs allowed for their role
+  const handleTabChange = (targetTab) => {
+    const roleKey = currentRole || currentUser?.role || 'Content Creator';
+    const allowed = ROLE_ALLOWED_TABS[roleKey] || ROLE_ALLOWED_TABS['Content Creator'];
+    if (allowed.includes(targetTab)) {
+      setActiveTab(targetTab);
     } else {
-      setActiveTab('creator-dashboard');
+      console.warn(`Access denied to '${targetTab}' for role '${roleKey}'. Returning to dedicated dashboard.`);
+      setActiveTab(getDefaultDashboard(roleKey));
     }
   };
+
+  // Enforce role isolation: if activeTab is not allowed for current role, redirect immediately
+  useEffect(() => {
+    const roleKey = currentRole || currentUser?.role || 'Content Creator';
+    const allowed = ROLE_ALLOWED_TABS[roleKey] || ROLE_ALLOWED_TABS['Content Creator'];
+    if (!allowed.includes(activeTab)) {
+      setActiveTab(getDefaultDashboard(roleKey));
+    }
+  }, [currentRole, currentUser, activeTab]);
 
   // Handle Logout
   const handleLogout = () => {
@@ -178,7 +205,7 @@ export default function App() {
     }
   };
 
-  // Switch Role helper — immediately opens that persona's dedicated dashboard!
+  // Switch Role helper — only accessible if explicitly invoked
   const handleRoleChange = (newRole) => {
     setCurrentRole(newRole);
     if (currentUser) {
@@ -188,13 +215,7 @@ export default function App() {
         localStorage.setItem('trustora_user', JSON.stringify(updated));
       } catch (e) {}
     }
-    if (newRole === 'Admin') {
-      setActiveTab('admin-dashboard');
-    } else if (newRole === 'Reviewer') {
-      setActiveTab('reviewer-dashboard');
-    } else if (newRole === 'Content Creator') {
-      setActiveTab('creator-dashboard');
-    }
+    setActiveTab(getDefaultDashboard(newRole));
   };
 
   // If user is not logged in, show the Login Portal
@@ -220,7 +241,7 @@ export default function App() {
         systemStatus={systemStatus}
         onLoadDemo={handleLoadDemo}
         isDemoLoading={isDemoLoading}
-        onNavigate={setActiveTab}
+        onNavigate={handleTabChange}
         onSelectSubmission={setSelectedSubmissionId}
         scoreData={complianceScoreData}
         onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
@@ -236,7 +257,7 @@ export default function App() {
         {/* Sidebar (Desktop Persistent & Mobile Drawer) */}
         <Sidebar
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           currentRole={currentRole}
           pendingCount={pendingCount}
           rulesCount={rules.length}
@@ -250,20 +271,39 @@ export default function App() {
         <main className="flex-1 min-w-0 w-full overflow-y-auto p-4 sm:p-7 md:p-8 bg-slate-50/60 dark:bg-slate-950/60 bg-grid-pattern transition-colors duration-200">
           <div className="max-w-7xl mx-auto w-full min-w-0 space-y-6">
             
-            {/* 1. ADMIN DEDICATED DASHBOARD */}
-            {activeTab === 'admin-dashboard' && (
+            {/* Access Guard for Unauthorized Dashboard Attempts */}
+            {!ROLE_ALLOWED_TABS[currentRole]?.includes(activeTab) && (
+              <div className="p-8 text-center bg-white dark:bg-slate-900 rounded-3xl border border-rose-200 dark:border-rose-900 shadow-sm">
+                <div className="w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3 border border-rose-200 dark:border-rose-800">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">Role Access Restricted</h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                  You are logged in as <strong>{currentRole}</strong>. You are only permitted to access your dedicated dashboard.
+                </p>
+                <button
+                  onClick={() => handleTabChange(getDefaultDashboard(currentRole))}
+                  className="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition cursor-pointer shadow-sm"
+                >
+                  Return to Dedicated Dashboard
+                </button>
+              </div>
+            )}
+
+            {/* 1. ADMIN DEDICATED DASHBOARD (Governance & Rules Admin) */}
+            {activeTab === 'admin-dashboard' && currentRole === 'Admin' && (
               <BrandRulesAdmin
                 company={company}
                 rules={rules}
                 companyId={company?.id || 1}
                 onRefresh={loadWorkspaceData}
                 scoreData={complianceScoreData}
-                onNavigate={setActiveTab}
+                onNavigate={handleTabChange}
               />
             )}
 
-            {/* 1b. TEAM & DOMAIN ACCOUNTS (ADMIN PROVISIONING) */}
-            {activeTab === 'team-domain' && (
+            {/* 1b. TEAM & DOMAIN ACCOUNTS (ADMIN ONLY PROVISIONING) */}
+            {activeTab === 'team-domain' && currentRole === 'Admin' && (
               <TeamDomainAdmin
                 company={company}
                 companyId={company?.id || 1}
@@ -271,34 +311,32 @@ export default function App() {
               />
             )}
 
-            {/* 2. CONTENT CREATOR DEDICATED DASHBOARD */}
-            {activeTab === 'creator-dashboard' && (
+            {/* 2. CONTENT CREATOR DEDICATED DASHBOARD (Content Studio) */}
+            {activeTab === 'creator-dashboard' && (currentRole === 'Content Creator' || currentRole === 'Creator') && (
               <ContentCreator
                 submissions={submissions}
                 selectedSubmissionId={selectedSubmissionId}
                 onSelectSubmission={setSelectedSubmissionId}
                 companyId={company?.id || 1}
                 onRefresh={loadWorkspaceData}
-                onRoleChange={handleRoleChange}
-                onNavigate={setActiveTab}
+                onNavigate={handleTabChange}
                 scoreData={complianceScoreData}
               />
             )}
 
-            {/* 3. REVIEWER / APPROVER DEDICATED DASHBOARD */}
-            {activeTab === 'reviewer-dashboard' && (
+            {/* 3. REVIEWER / APPROVER DEDICATED DASHBOARD (Human Review Gate) */}
+            {activeTab === 'reviewer-dashboard' && (currentRole === 'Reviewer' || currentRole === 'Approver') && (
               <ReviewQueue
                 submissions={submissions}
                 selectedSubmissionId={selectedSubmissionId}
                 onSelectSubmission={setSelectedSubmissionId}
                 onRefresh={loadWorkspaceData}
-                onNavigate={setActiveTab}
-                onRoleChange={handleRoleChange}
+                onNavigate={handleTabChange}
                 scoreData={complianceScoreData}
               />
             )}
 
-            {/* 4. SUGGESTION & GUIDELINE PDF HUB (Everyone can upload & inspect) */}
+            {/* 4. SUGGESTION & GUIDELINE PDF HUB (Shared resource) */}
             {activeTab === 'guidelines-hub' && (
               <GuidelinePdfHub
                 companyId={company?.id || 1}
@@ -312,7 +350,8 @@ export default function App() {
               <AuditHistory
                 submissions={submissions}
                 onSelectSubmission={setSelectedSubmissionId}
-                onNavigate={setActiveTab}
+                onNavigate={handleTabChange}
+                currentRole={currentRole}
               />
             )}
 
@@ -320,9 +359,9 @@ export default function App() {
             {activeTab === 'overview' && (
               <OverviewDashboard
                 stats={dashboardStats}
-                onNavigate={setActiveTab}
+                onNavigate={handleTabChange}
                 onSelectSubmission={setSelectedSubmissionId}
-                onRoleChange={handleRoleChange}
+                currentRole={currentRole}
               />
             )}
 

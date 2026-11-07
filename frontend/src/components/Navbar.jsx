@@ -88,12 +88,12 @@ export default function Navbar({
 
     if (notif.submission_id) {
       onSelectSubmission(notif.submission_id);
-      if (notif.notification_type === 'review_request') {
-        onRoleChange('Reviewer');
+      if (currentRole === 'Reviewer') {
         onNavigate('reviewer-dashboard');
-      } else {
-        onRoleChange('Content Creator');
+      } else if (currentRole === 'Content Creator') {
         onNavigate('creator-dashboard');
+      } else {
+        onNavigate('history');
       }
     }
     setIsNotifOpen(false);
@@ -171,26 +171,46 @@ export default function Navbar({
         {/* Right: Segmented Role Switcher, Dark Mode, Notifications, Avatar */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
 
-          {/* Segmented Role Switcher */}
-          <div className="flex items-center bg-slate-100/90 dark:bg-slate-800/90 p-1 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
-            {roles.map((r) => {
-              const active = currentRole === r.id;
-              const Icon = r.icon;
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => onRoleChange(r.id)}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold rounded-xl transition-all duration-200 cursor-pointer ${active
-                      ? 'bg-indigo-600 text-white shadow-glow-sm'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-700/50'
-                    }`}
-                  title={`Switch to ${r.label} Dashboard`}
+          {/* Active Dedicated Role Badge (Role-Isolated Access) */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs">
+            <div
+              className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs text-white ${
+                currentRole === 'Admin'
+                  ? 'bg-violet-600 shadow-violet-500/20 shadow-md'
+                  : currentRole === 'Reviewer'
+                  ? 'bg-emerald-600 shadow-emerald-500/20 shadow-md'
+                  : 'bg-indigo-600 shadow-indigo-500/20 shadow-md'
+              }`}
+            >
+              {currentRole === 'Admin' ? (
+                <Shield className="w-3.5 h-3.5" />
+              ) : currentRole === 'Reviewer' ? (
+                <CheckCircle2 className="w-3.5 h-3.5" />
+              ) : (
+                <PenTool className="w-3.5 h-3.5" />
+              )}
+            </div>
+            <div className="flex flex-col text-left">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-black text-slate-900 dark:text-white leading-tight">
+                  {currentRole === 'Admin' ? 'Admin' : currentRole === 'Reviewer' ? 'Approver' : 'Creator'}
+                </span>
+                <span
+                  className={`text-[9px] uppercase tracking-wider font-extrabold px-1.5 py-0.2 rounded-full border ${
+                    currentRole === 'Admin'
+                      ? 'bg-violet-50 dark:bg-violet-950/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800'
+                      : currentRole === 'Reviewer'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
+                      : 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800'
+                  }`}
                 >
-                  <Icon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{r.label}</span>
-                </button>
-              );
-            })}
+                  Dedicated
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium leading-none">
+                {currentRole === 'Admin' ? 'Governance Dashboard' : currentRole === 'Reviewer' ? 'Human Review Gate' : 'Content Studio'}
+              </span>
+            </div>
           </div>
 
           {/* Theme Toggle Button */}
