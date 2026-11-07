@@ -2,7 +2,7 @@ import os
 import shutil
 from typing import List, Optional
 from datetime import datetime, timezone
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
@@ -45,6 +45,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Support both /api/path and /path interchangeably (crucial for Vercel & proxy environments)
+@app.middleware("http")
+async def api_prefix_middleware(request: Request, call_next):
+    path = request.url.path
+    if path.startswith("/api/") and not path.startswith("/api/docs") and not path.startswith("/api/openapi.json"):
+        request.scope["path"] = path[4:]
+    return await call_next(request)
 
 
 @app.on_event("startup")
