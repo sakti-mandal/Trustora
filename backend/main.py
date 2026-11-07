@@ -272,13 +272,22 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
     else:
         norm_role = "Content Creator"
 
-    # Find user
+    # Get active company safely
+    company = db.query(Company).first()
+    if not company:
+        company = seed_nova_tech(db)
+    active_comp_id = company.id if company else 1
+
+    # Check if demo account
+    is_demo_email = email in ["admin@novatech.io", "creator@novatech.io", "reviewer@novatech.io"]
+
+    # Find user in DB
     user = db.query(User).filter(User.email.ilike(email)).first()
     if not user:
-        # Auto-provision custom evaluator user if not registered yet
+        # Auto-provision new evaluator user account
         name_part = email.split("@")[0].replace(".", " ").title()
         user = User(
-            company_id=1,
+            company_id=active_comp_id,
             full_name=name_part or f"{norm_role} User",
             email=email,
             password_hash=password,
@@ -288,17 +297,30 @@ def login_user(payload: LoginRequest, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(user)
     else:
-        # Check password if set by Admin
-        if user.password_hash:
-            if user.password_hash != password:
+        # Check credentials
+        if is_demo_email:
+            # Demo profiles accept default "trustora123" or matching password
+            if user.password_hash and user.password_hash != password and password != "trustora123":
+                # If evaluator typed a custom password on a demo profile, allow & update
+                user.password_hash = password
+                db.commit()
+        else:
+            # Custom admin-created accounts strictly verify password
+            if user.password_hash and user.password_hash != password:
                 raise HTTPException(
                     status_code=401,
                     detail=f"Invalid password for {user.email}. Please verify the credentials issued by your Administrator."
                 )
-        else:
-            # First-time demo user setting their password
-            user.password_hash = password
+
+        if not user.password_hash:
+            user.password_hash = password or "trustora123"
             db.commit()
+
+        # If user explicitly switched role on login screen, update role for convenience
+        if payload.role and (is_demo_email or user.email.endswith(".test")):
+            user.role = norm_role
+            db.commit()
+            db.refresh(user)
 
     return {
         "user": UserOut(

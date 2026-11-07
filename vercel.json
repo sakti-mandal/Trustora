@@ -1,12 +1,74 @@
 {
-  "framework": "vite",
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/auth/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/compliance/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/content/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/companies/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/guidelines/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/brand-rules/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/dashboard/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/notifications/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/health",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/docs",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/openapi.json",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "frontend/dist/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/dist/index.html"
     }
   ]
 }
-

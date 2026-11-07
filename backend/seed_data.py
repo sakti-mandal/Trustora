@@ -35,9 +35,9 @@ def seed_nova_tech(db: Session) -> Company:
 
     # 1. Demo Users
     demo_users = [
-        {"full_name": "Sarah Chen", "email": "admin@novatech.io", "role": "Admin"},
-        {"full_name": "Marcus Rodriguez", "email": "creator@novatech.io", "role": "Content Creator"},
-        {"full_name": "Elena Rostova", "email": "reviewer@novatech.io", "role": "Reviewer"}
+        {"full_name": "Sarah Chen", "email": "admin@novatech.io", "role": "Admin", "password": "trustora123"},
+        {"full_name": "Marcus Rodriguez", "email": "creator@novatech.io", "role": "Content Creator", "password": "trustora123"},
+        {"full_name": "Elena Rostova", "email": "reviewer@novatech.io", "role": "Reviewer", "password": "trustora123"}
     ]
     for u_data in demo_users:
         existing_u = db.query(User).filter(User.email == u_data["email"]).first()
@@ -46,9 +46,13 @@ def seed_nova_tech(db: Session) -> Company:
                 company_id=company.id,
                 full_name=u_data["full_name"],
                 email=u_data["email"],
-                role=u_data["role"]
+                role=u_data["role"],
+                password_hash=u_data.get("password", "trustora123")
             )
             db.add(user)
+        else:
+            if not existing_u.password_hash:
+                existing_u.password_hash = u_data.get("password", "trustora123")
     db.commit()
 
     # 2. Sample Brand Guidelines Document
