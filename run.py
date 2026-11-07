@@ -1,13 +1,14 @@
 import os
 import sys
-import webbrowser
 import uvicorn
 
 if __name__ == "__main__":
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", 8000))
     print("=" * 60)
     print("Starting TRUSTORA Brand Governance Platform...")
-    print("URL: http://127.0.0.1:8000")
-    print("API Docs: http://127.0.0.1:8000/docs")
+    print(f"Server binding: http://{host}:{port}")
+    print(f"API Docs: http://{host}:{port}/docs")
     print("=" * 60)
-    uvicorn.run("backend.main:app", host="127.0.0.1", port=8000, reload=False)
+    uvicorn.run("backend.main:app", host=host, port=port, reload=False)
 

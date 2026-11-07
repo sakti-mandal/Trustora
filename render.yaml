@@ -1,12 +1,12 @@
 services:
-  # Web Service (FastAPI + React frontend unified bundle)
+  # Web Service (Unified FastAPI + React SPA with Multi-Stage Docker Build)
   - type: web
     name: trustora-app
-    env: python
+    env: docker
+    dockerfilePath: ./Dockerfile
     region: oregon
     plan: free
-    buildCommand: "pip install -r requirements.txt && cd frontend && npm install && npm run build"
-    startCommand: "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -24,4 +24,3 @@ databases:
     region: oregon
     databaseName: trustora
     user: trustora_user
-

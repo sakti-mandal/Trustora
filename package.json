@@ -9,7 +9,7 @@
     "frontend:build": "npm --prefix frontend run build",
     "frontend:dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend install && npm --prefix frontend run build",
-    "start": ".\\venv\\Scripts\\python.exe run.py"
+    "start": "python run.py"
   },
   "keywords": ["brand-governance", "rag", "fastapi", "react", "gemini", "hackathon"],
   "author": "Team REDO",

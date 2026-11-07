@@ -1,4 +1,14 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const getApiBase = () => {
+  if (import.meta.env.VITE_API_URL) return import.meta.env.VITE_API_URL;
+  // If running in local Vite development server on port 5173, target local backend
+  if (typeof window !== 'undefined' && window.location.port === '5173') {
+    return 'http://127.0.0.1:8000';
+  }
+  // In production deployment or unified FastAPI server, use same-origin relative paths
+  return '';
+};
+
+const API_BASE = getApiBase();
 
 export async function loginUser(email, password, role) {
   const res = await fetch(`${API_BASE}/auth/login`, {
